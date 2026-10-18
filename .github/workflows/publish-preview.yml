@@ -1,0 +1,68 @@
+name: Publish verified LinkGrab 2.0 preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/workflows/publish-preview.yml]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-linkgrab-2-preview
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download the verified ARM64 APK
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 39118090898
+          artifact-ids: 12132867783
+          merge-multiple: true
+          path: package
+      - name: Verify and publish the installable preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mv package/app-debug.apk package/LinkGrab-2.0.0.apk
+          cd package
+          echo 'c727be7f532d2e044a36805bf1281c82e30a338d73bac6d524f736cb66d81b33  LinkGrab-2.0.0.apk' > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          cat > RELEASE_NOTES.md <<'NOTES'
+          ## LinkGrab 2.0 preview
+
+          Free Android video/audio downloader. Android 10+, ARM64.
+
+          ### Install
+          Download **LinkGrab-2.0.0.apk** below and allow your browser or file manager to install it.
+          This preview uses a debug signing key. If Android reports a signature conflict with an older installation, uninstall the old app first. Uninstalling resets app history; media already saved to the gallery remains.
+
+          ### Included
+          - Violet Compose interface with light, dark and system themes.
+          - On-device yt-dlp and FFmpeg; metadata preview, video and M4A/MP3 audio.
+          - Persistent queue, foreground progress, pause/resume, cancel and retry.
+          - MediaStore saving, searchable Room history, rename/open/share/delete.
+          - Onboarding, settings, engine updates and offline license information.
+          - No account, ads, paywall or custom backend.
+
+          Debug/release compilation, unit tests and lint passed. Three native integration tests passed on Android 16, covering actual yt-dlp/FFmpeg downloads, partial-file resume and MediaStore publication. Additional physical-device and 16 KB page-size validation is needed before a stable public release.
+
+          Site support and resumability depend on yt-dlp and the source. DRM, private and login-restricted content are not supported.
+
+          Download only content you own or have permission to save. Some services may restrict downloading. DRM-protected, private, or login-restricted content may not work.
+
+          Source: GPL-3.0-only. See README and THIRD_PARTY_NOTICES for build instructions and dependency licensing.
+          NOTES
+          if gh release view v2.0.0 >/dev/null 2>&1; then
+            echo 'Release v2.0.0 already exists; preserving published assets.'
+            exit 0
+          fi
+          gh release create v2.0.0 LinkGrab-2.0.0.apk SHA256SUMS.txt \
+            --target 1ecf10ce2c2f96dafe2b6150a4aa4e6831110091 \
+            --title 'LinkGrab 2.0.0 — Preview' --prerelease --notes-file RELEASE_NOTES.md
