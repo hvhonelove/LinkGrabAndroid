@@ -38,14 +38,14 @@ class UiSmokeInstrumentation : Instrumentation() {
                 (targetContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
                     .setPrimaryClip(ClipData.newPlainText("link", "Видео https://youtu.be/abc123"))
             })
-            runOnMainSync {
+            onUi {
                 check((find(activity.window.decorView) { it is EditText } as EditText).text.toString() == "https://youtu.be/abc123")
             }
             click(activity, "Качество: 720p")
             check(targetContext.getSharedPreferences("preferences", Context.MODE_PRIVATE).getInt("quality", -1) == 2)
             click(activity, "Очистить ссылку")
             click(activity, "Скачать видео")
-            runOnMainSync { check((find(activity.window.decorView) { it is EditText } as EditText).error != null) }
+            onUi { check((find(activity.window.decorView) { it is EditText } as EditText).error != null) }
             click(activity, "Загрузки")
             screenshot("02-library-empty")
             click(activity, "Настройки")
@@ -56,8 +56,8 @@ class UiSmokeInstrumentation : Instrumentation() {
                 .putExtra(DownloadService.EXTRA_PROGRESS, 42).putExtra(DownloadService.EXTRA_BUSY, true)
                 .putExtra(DownloadService.EXTRA_STATE, "working"))
             idle()
-            runOnMainSync { check(!findDescription(activity, "Скачать видео").isEnabled) }
-            runOnMainSync {
+            onUi { check(!findDescription(activity, "Скачать видео").isEnabled) }
+            onUi {
                 (find(activity.window.decorView) { it is android.widget.ScrollView } as android.widget.ScrollView)
                     .fullScroll(View.FOCUS_DOWN)
             }
@@ -78,7 +78,7 @@ class UiSmokeInstrumentation : Instrumentation() {
             idle()
             screenshot("06-landscape")
             DownloadHistory.clear(targetContext)
-            runOnMainSync { activity.finish() }
+            onUi { activity.finish() }
             finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "UI_SMOKE_OK: parser, clipboard, validation, quality, navigation, progress, history, missing media, rotation\n") })
         } catch (error: Throwable) {
             runCatching { screenshot("failure") }
@@ -87,9 +87,17 @@ class UiSmokeInstrumentation : Instrumentation() {
         }
     }
 
+    private fun onUi(block: () -> Unit) {
+        var failure: Throwable? = null
+        runOnMainSync {
+            try { block() } catch (error: Throwable) { failure = error }
+        }
+        failure?.let { throw it }
+    }
+
     private fun idle() { waitForIdleSync(); Thread.sleep(400); waitForIdleSync() }
     private fun click(activity: Activity, description: String, before: () -> Unit = {}) {
-        runOnMainSync { before(); check(findDescription(activity, description).performClick()) }
+        onUi { before(); check(findDescription(activity, description).performClick()) }
         idle()
     }
     private fun findDescription(activity: Activity, description: String): View =
@@ -103,6 +111,7 @@ class UiSmokeInstrumentation : Instrumentation() {
         return null
     }
     private fun screenshot(name: String) {
+        sendStatus(0, Bundle().apply { putString("stream", "UI checkpoint: $name\n") })
         val folder = File(targetContext.getExternalFilesDir(null), "screenshots").apply { mkdirs() }
         val bitmap = uiAutomation.takeScreenshot() ?: error("Screenshot unavailable")
         File(folder, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
