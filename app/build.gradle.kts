@@ -33,6 +33,7 @@ android {
     }
 }
 dependencies {
+    implementation("androidx.core:core:1.15.0")
     val version = "0.18.1"
     implementation("io.github.junkfood02.youtubedl-android:library:$version")
     implementation("io.github.junkfood02.youtubedl-android:ffmpeg:$version")
