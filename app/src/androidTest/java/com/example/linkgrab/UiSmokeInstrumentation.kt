@@ -57,6 +57,11 @@ class UiSmokeInstrumentation : Instrumentation() {
                 .putExtra(DownloadService.EXTRA_STATE, "working"))
             idle()
             runOnMainSync { check(!findDescription(activity, "Скачать видео").isEnabled) }
+            runOnMainSync {
+                (find(activity.window.decorView) { it is android.widget.ScrollView } as android.widget.ScrollView)
+                    .fullScroll(View.FOCUS_DOWN)
+            }
+            idle()
             screenshot("04-progress")
             targetContext.sendBroadcast(Intent(DownloadService.ACTION_STATUS).setPackage(targetContext.packageName)
                 .putExtra(DownloadService.EXTRA_STATUS, "Проверка завершена")

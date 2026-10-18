@@ -54,7 +54,7 @@ class LineIcon(context: Context, private val kind: String, var tint: Int) : View
                 canvas.drawCircle(5f, 12f, 3f, paint)
                 canvas.drawCircle(19f, 4f, 3f, paint); canvas.drawCircle(19f, 20f, 3f, paint)
             }
-            "arrow" -> line(5f, 12f, 20f, 12f, 14f, 6f); line(20f, 12f, 14f, 18f)
+            "arrow" -> { line(5f, 12f, 20f, 12f, 14f, 6f); line(20f, 12f, 14f, 18f) }
             "close" -> { line(6f, 6f, 18f, 18f); line(18f, 6f, 6f, 18f) }
             "check" -> line(5f, 12f, 10f, 17f, 20f, 6f)
             "refresh" -> {

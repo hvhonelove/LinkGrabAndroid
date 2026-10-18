@@ -1,5 +1,8 @@
 package com.example.linkgrab
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -98,7 +101,7 @@ class DownloadService : Service() {
                         showStatus(message, percentage, false)
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         if (state == "error") finishedNotification("Не удалось скачать. Открой LinkGrab для подробностей.", null)
-                        stopSelf(startId)
+                        stopSelf()
                     }
                 }, "LinkGrab-Worker").start()
                 return START_NOT_STICKY
@@ -231,6 +234,9 @@ class DownloadService : Service() {
             putExtra(EXTRA_BUSY, busy)
             putExtra(EXTRA_STATE, latestState)
         })
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
         if (busy) notifications.notify(FOREGROUND_ID, notification(message, percentage))
     }
 
@@ -272,6 +278,9 @@ class DownloadService : Service() {
     }
 
     private fun finishedNotification(message: String, video: Uri?) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
         val intent = if (video == null) Intent(this, MainActivity::class.java)
         else Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(video, "video/*")
