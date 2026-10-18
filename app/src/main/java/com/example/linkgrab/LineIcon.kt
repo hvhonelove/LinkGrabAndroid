@@ -20,8 +20,11 @@ class LineIcon(context: Context, private val kind: String, var tint: Int) : View
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.save()
-        val scale = minOf(width, height) / 24f
-        canvas.translate((width - 24 * scale) / 2, (height - 24 * scale) / 2)
+        val contentWidth = width - paddingLeft - paddingRight
+        val contentHeight = height - paddingTop - paddingBottom
+        val scale = minOf(contentWidth, contentHeight) / 24f
+        canvas.translate(paddingLeft + (contentWidth - 24 * scale) / 2,
+            paddingTop + (contentHeight - 24 * scale) / 2)
         canvas.scale(scale, scale)
         paint.color = tint
         fun line(vararg points: Float) {
