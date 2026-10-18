@@ -64,6 +64,7 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w com.example.linkgrab.test/com.example.linkgrab.UiSmokeInstrumentation | tee ui-smoke.log
+            adb pull /sdcard/Android/data/com.example.linkgrab/files/screenshots screenshots || true
             grep -q UI_SMOKE_OK ui-smoke.log
       - name: Collect screenshots
         if: always()
