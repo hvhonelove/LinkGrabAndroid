@@ -10,7 +10,7 @@ object ErrorMapper {
             raw.contains("Unsupported URL", true) -> "Сервис не поддерживает эту ссылку. Попробуй прямую ссылку на видео."
             raw.contains("DRM", true) -> "Видео защищено DRM и не может быть сохранено."
             raw.contains("private", true) || raw.contains("sign in", true) || raw.contains("login", true) -> "Видео закрыто или требует входа. Попробуй публичную ссылку."
-            raw.contains("403") || raw.contains("429") -> "Сайт отклонил запрос к видео (403/429). Попробуй обновить yt-dlp или сменить сеть."
+            raw.contains("403") || raw.contains("429") -> "Сайт ограничил доступ к видеосерверу (403/429). Попробуй обновить yt-dlp или сменить сеть."
             raw.contains("Requested format", true) || raw.contains("codec", true) -> "Этот формат недоступен. Попробуй «Лучшее» или другое качество."
             error is IOException || raw.contains("resolve", true) || raw.contains("timed out", true) ||
                 raw.contains("name resolution", true) || raw.contains("Name or service not known", true) ||
