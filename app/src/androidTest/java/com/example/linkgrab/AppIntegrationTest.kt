@@ -60,7 +60,13 @@ class AppIntegrationTest {
             compose.onNodeWithText("Готовые").performClick()
             screenshot("04-history")
             compose.onNodeWithTag("task-${item.id}").performClick()
-            compose.onNodeWithTag("rename").performScrollTo().performClick()
+            compose.waitUntil(10000) { compose.onAllNodesWithTag("file-details").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitForIdle()
+            compose.onNodeWithTag("rename").performScrollTo()
+            compose.waitForIdle()
+            screenshot("05-file-details")
+            compose.onNodeWithTag("rename").performClick()
+            compose.waitUntil(10000) { compose.onAllNodesWithTag("rename-input").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag("rename-input").performTextReplacement("Saved integration video")
             compose.onNodeWithText("Сохранить").performClick()
             compose.waitUntil(10000) { runBlocking { graph.downloads.dao.get(item.id)?.title == "Saved integration video" } }
