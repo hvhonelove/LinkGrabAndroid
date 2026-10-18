@@ -4,3 +4,7 @@
 *.iml
 /local.properties
 /.idea/
+*.jks
+*.keystore
+/screenshots/
+/crash.log
