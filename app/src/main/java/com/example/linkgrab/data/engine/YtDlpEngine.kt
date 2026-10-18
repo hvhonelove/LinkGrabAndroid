@@ -57,36 +57,65 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
         begin()
         try {
             check(folder.exists() || folder.mkdirs()) { "Не удалось создать временную папку" }
-            val request = baseRequest(url).apply {
-                addOption("--newline"); addOption("--continue"); addOption("--no-mtime")
-                addOption("-o", File(folder, "media.%(ext)s").absolutePath)
-                if (options.kind == MediaKind.AUDIO) {
-                    addOption("-f", "ba/b"); addOption("-x")
-                    addOption("--audio-format", if (options.format == ContainerFormat.MP3) "mp3" else "m4a")
-                } else {
-                    addOption("-f", DownloadFormatSelector.video(url, options.quality))
-                    addOption("-S", "res,ext:mp4:m4a")
-                    when (options.format) {
-                        ContainerFormat.MP4 -> { addOption("--merge-output-format", "mp4"); addOption("--remux-video", "mp4") }
-                        ContainerFormat.WEBM -> { addOption("--merge-output-format", "webm"); addOption("--remux-video", "webm") }
-                        else -> addOption("--merge-output-format", "mp4/webm/mkv")
+            var phase = "Подготовка"
+            val onProgress: (Float, Long, String) -> Unit = { percent, eta, line ->
+                phase = when {
+                    line.contains("[Merger]") -> "Объединение дорожек"
+                    line.contains("[ExtractAudio]") -> "Преобразование аудио"
+                    line.contains("[VideoRemuxer]") -> "Смена контейнера"
+                    line.startsWith("[download]") -> "Скачивание"
+                    else -> phase
+                }
+                val speed = Regex("at\\s+([^\\s]+/s)").find(line)?.groupValues?.get(1).orEmpty()
+                val parsed = Regex("\\[download]\\s+(\\d+(?:\\.\\d+)?)%").find(line)?.groupValues?.get(1)?.toFloatOrNull()
+                val value = if (phase == "Скачивание") parsed ?: percent else -1f
+                progress(EngineProgress(value.coerceIn(-1f, 100f),
+                    if (value >= 0 && value < 100) eta.coerceAtLeast(0) else 0, speed, phase))
+            }
+            val isTikTok = LinkParser.isTikTok(url) && options.kind == MediaKind.VIDEO
+            val attempts = if (isTikTok) 2 else 1
+            for (attempt in 0 until attempts) {
+                val request = baseRequest(url).apply {
+                    addOption("--newline")
+                    addOption("--continue")
+                    addOption("--no-mtime")
+                    addOption("--fragment-retries", "3")
+                    addOption("--extractor-retries", "3")
+                    addOption("-o", File(folder, "media.%(ext)s").absolutePath)
+                    if (options.kind == MediaKind.AUDIO) {
+                        addOption("-f", "ba/b")
+                        addOption("-x")
+                        addOption("--audio-format", if (options.format == ContainerFormat.MP3) "mp3" else "m4a")
+                    } else {
+                        addOption("-f", DownloadFormatSelector.video(url, options.quality, alternate = attempt > 0))
+                        addOption("-S", "res,ext:mp4:m4a")
+                        when (options.format) {
+                            ContainerFormat.MP4 -> {
+                                addOption("--merge-output-format", "mp4")
+                                addOption("--remux-video", "mp4")
+                            }
+                            ContainerFormat.WEBM -> {
+                                addOption("--merge-output-format", "webm")
+                                addOption("--remux-video", "webm")
+                            }
+                            else -> addOption("--merge-output-format", "mp4/webm/mkv")
+                        }
                     }
                 }
-            }
-            var phase = "Подготовка"
-            runInterruptible(Dispatchers.IO) {
-                YoutubeDL.execute(request, "task-$id", false) { percent, eta, line ->
-                    phase = when {
-                        line.contains("[Merger]") -> "Объединение дорожек"
-                        line.contains("[ExtractAudio]") -> "Преобразование аудио"
-                        line.contains("[VideoRemuxer]") -> "Смена контейнера"
-                        line.startsWith("[download]") -> "Скачивание"
-                        else -> phase
+                try {
+                    runInterruptible(Dispatchers.IO) {
+                        YoutubeDL.execute(request, "task-$id", false, onProgress)
                     }
-                    val speed = Regex("at\\s+([^\\s]+/s)").find(line)?.groupValues?.get(1).orEmpty()
-                    val parsed = Regex("\\[download]\\s+(\\d+(?:\\.\\d+)?)%").find(line)?.groupValues?.get(1)?.toFloatOrNull()
-                    val value = if (phase == "Скачивание") parsed ?: percent else -1f
-                    progress(EngineProgress(value.coerceIn(-1f, 100f), if (value >= 0 && value < 100) eta.coerceAtLeast(0) else 0, speed, phase))
+                    break
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    if (!isTikTok || attempt == attempts - 1 || !isRetryableTikTokFailure(error)) throw error
+                    // A different TikTok CDN format can work even when the first stream is
+                    // forbidden or temporarily unavailable. Never resume a part from another format.
+                    folder.listFiles()?.filter { it.isFile }?.forEach { it.delete() }
+                    phase = "Подбор альтернативного потока TikTok"
+                    progress(EngineProgress(-1f, 0, "", phase))
                 }
             }
             return folder.listFiles()?.filter { it.isFile && it.length() > 0 && it.extension.lowercase() in setOf("mp4", "webm", "mkv", "m4a", "mp3", "mov", "opus") }
@@ -118,6 +147,13 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
         }
     }
     override fun version() = checkedVersion ?: YoutubeDL.versionName(context) ?: YoutubeDL.version(context) ?: "Встроенная версия"
+    private fun isRetryableTikTokFailure(error: Exception): Boolean {
+        val raw = error.message.orEmpty().lowercase()
+        return listOf("403", "404", "429", "timed out", "timeout", "connection",
+            "unable to download", "requested format", "no video formats", "http error")
+            .any { it in raw }
+    }
+
     private fun baseRequest(url: String) = YoutubeDLRequest(LinkParser.normalize(url)).apply {
         addOption("--no-playlist"); addOption("--socket-timeout", "20"); addOption("--retries", "2")
     }

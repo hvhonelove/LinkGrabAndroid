@@ -1,3 +1,11 @@
+## 2.0.2 — Retry unavailable TikTok streams and expose download diagnostics
+
+- Prefer TikTok direct play formats ahead of potentially unavailable bitrate formats.
+- Retry once with an alternate non-watermarked format when the TikTok stream returns connection, HTTP or format errors.
+- Show redacted technical error details on the failed-download details screen; list cards still show a short message.
+- Better distinguish CDN access failures from general connectivity issues.
+- Add JVM regression tests for format fallback and diagnostic redaction.
+
 ## Unreleased — TikTok and VK Видео improvements
 
 - Recognize TikTok, TikTok short links, VK Video and vkvideo.ru URLs.

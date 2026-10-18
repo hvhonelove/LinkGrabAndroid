@@ -109,7 +109,7 @@ fun DownloadCard(item: DownloadEntity, openDetails: () -> Unit, menuActions: Lis
                 if (item.eta > 0) Text("≈ ${item.eta} с", style = MaterialTheme.typography.bodySmall)
             }
         } else Text(if (item.status == TaskStatus.COMPLETED) "${bytesLabel(item.bytes)} · ${DateFormat.getDateInstance(DateFormat.SHORT).format(Date(item.createdAt))}"
-            else item.error ?: item.phase, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            else item.error?.substringBefore("\n") ?: item.phase, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 3, overflow = TextOverflow.Ellipsis)
         if (item.status == TaskStatus.RUNNING && item.bytes > 0) Text("≈ ${bytesLabel(item.bytes)}", style = MaterialTheme.typography.bodySmall)
         if (actions != null) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, content = actions)

@@ -51,7 +51,7 @@ class QueueProcessor(private val graph: AppContainer, private val notifications:
         } catch (error: Exception) {
             val current = repo.dao.get(item.id)
             if (current?.status == TaskStatus.RUNNING) repo.dao.update(current.copy(status = TaskStatus.FAILED,
-                error = ErrorMapper.message(error), phase = "Ошибка", speed = "", eta = 0))
+                error = ErrorMapper.failure(error), phase = "Ошибка", speed = "", eta = 0))
         } finally {
             withContext(NonCancellable + Dispatchers.IO) {
                 stopper.cancelAndJoin(); collector.cancelAndJoin(); progressUpdates.close()

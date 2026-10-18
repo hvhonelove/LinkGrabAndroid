@@ -42,7 +42,20 @@ fun FileDetailsScreen(item: DownloadEntity, back: () -> Unit, action: (FileActio
                 if (item.fileName.isNotBlank()) DetailRow("Имя файла", item.fileName)
                 if (item.uploader.isNotBlank()) DetailRow("Автор", item.uploader)
                 DetailRow("Папка", if (item.kind == MediaKind.AUDIO) "Music / LinkGrab" else "Movies / LinkGrab")
-                item.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                item.error?.let { report ->
+                    Text(report.substringBefore("\n"), color = MaterialTheme.colorScheme.error)
+                    if (report.contains("Диагностика:")) {
+                        var showTechnical by remember { mutableStateOf(false) }
+                        TextButton(onClick = { showTechnical = !showTechnical }) {
+                            Text(if (showTechnical) "Скрыть техническую причину" else "Показать техническую причину")
+                        }
+                        if (showTechnical) {
+                            androidx.compose.foundation.text.selection.SelectionContainer {
+                                Text(report.substringAfter("Диагностика:").trim(), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
             }
             if (item.status == TaskStatus.COMPLETED) {
                 PrimaryButton("Открыть файл", Icons.Outlined.PlayArrow) { action(FileAction.OPEN) }

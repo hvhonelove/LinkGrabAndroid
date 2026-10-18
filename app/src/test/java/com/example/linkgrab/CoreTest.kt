@@ -37,14 +37,28 @@ class CoreTest {
     }
 
     @Test fun watermarkFreeFormatPreference() {
-        val tiktok = DownloadFormatSelector.video("https://www.tiktok.com/@someone/video/123456", 720)
-        assertTrue(tiktok.contains("[format_id^=play_addr]"))
-        assertTrue(tiktok.contains("[format_note!*=?watermarked]"))
-        assertTrue(tiktok.contains("[format_id!^=?download]"))
-        assertTrue(tiktok.contains("[height<=?720]"))
+        val url = "https://www.tiktok.com/@someone/video/123456"
+        val first = DownloadFormatSelector.video(url, 720)
+        assertTrue(first.contains("[format_id^=play_addr]"))
+        assertTrue(first.contains("[format_id=play]"))
+        assertTrue(first.contains("[format_note!*=?watermarked]"))
+        assertTrue(first.contains("[format_id!^=?download]"))
+        assertTrue(first.contains("[height<=?720]"))
+        val alternative = DownloadFormatSelector.video(url, 720, alternate = true)
+        assertTrue(alternative.startsWith("b[height<=?720][format_note"))
+        assertNotEquals(first, alternative)
         assertEquals("bv*[height<=?1080]+ba/b[height<=?1080]",
             DownloadFormatSelector.video("https://vkvideo.ru/video-1_2", 1080))
         assertEquals("bv*+ba/b", DownloadFormatSelector.video("https://x.com/u/status/1", 0))
+    }
+
+    @Test fun failedDownloadHasUsefulRedactedDetails() {
+        val error = IllegalStateException("HTTP Error 403: connection to https://example.com/video?token=abc failed")
+        val text = ErrorMapper.failure(error)
+        assertTrue(text.contains("403/429"))
+        assertTrue(text.contains("Диагностика:"))
+        assertFalse(text.contains("token=abc"))
+        assertFalse(text.contains("https://example.com"))
     }
 
     @Test fun qualityAndEstimate() {
