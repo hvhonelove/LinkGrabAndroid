@@ -15,10 +15,11 @@ data class AppSettings(
     val kind: MediaKind = MediaKind.VIDEO,
     val audioFormat: ContainerFormat = ContainerFormat.M4A,
     val clipboard: Boolean = false,
-    val autoUpdate: Boolean = false,
+    val autoUpdate: Boolean = true,
     val notifications: Boolean = true,
     val onboarded: Boolean = false,
     val lastEngineUpdate: Long = 0,
+    val lastEngineCheck: Long = 0,
     val legacyMigrated: Boolean = false,
     val notificationAsked: Boolean = false
 )
@@ -29,16 +30,18 @@ class SettingsStore(context: Context) {
             enumValue(p[stringPreferencesKey("theme")], ThemeMode.SYSTEM), p[intPreferencesKey("quality")] ?: 0,
             enumValue(p[stringPreferencesKey("kind")], MediaKind.VIDEO),
             enumValue(p[stringPreferencesKey("audioFormat")], ContainerFormat.M4A),
-            p[booleanPreferencesKey("clipboard")] ?: false, p[booleanPreferencesKey("autoUpdate")] ?: false,
+            p[booleanPreferencesKey("clipboard")] ?: false, p[booleanPreferencesKey("autoUpdate")] ?: true,
             p[booleanPreferencesKey("notifications")] ?: true, p[booleanPreferencesKey("onboarded")] ?: false,
-            p[longPreferencesKey("lastEngineUpdate")] ?: 0, p[booleanPreferencesKey("legacyMigrated")] ?: false,
+            p[longPreferencesKey("lastEngineUpdate")] ?: 0, p[longPreferencesKey("lastEngineCheck")] ?: 0,
+            p[booleanPreferencesKey("legacyMigrated")] ?: false,
             p[booleanPreferencesKey("notificationAsked")] ?: false
         )
     }
     suspend fun text(key: String, value: String) { store.edit { it[stringPreferencesKey(key)] = value } }
     suspend fun flag(key: String, value: Boolean) { store.edit { it[booleanPreferencesKey(key)] = value } }
     suspend fun quality(value: Int) { store.edit { it[intPreferencesKey("quality")] = value } }
-    suspend fun engineUpdated() { store.edit { it[longPreferencesKey("lastEngineUpdate")] = System.currentTimeMillis() } }
+    suspend fun engineChecked() { store.edit { it[longPreferencesKey("lastEngineCheck")] = System.currentTimeMillis() } }
+    suspend fun engineUpdated() { store.edit { val time = System.currentTimeMillis(); it[longPreferencesKey("lastEngineUpdate")] = time; it[longPreferencesKey("lastEngineCheck")] = time } }
     private inline fun <reified T : Enum<T>> enumValue(raw: String?, fallback: T): T =
         runCatching { enumValueOf<T>(raw.orEmpty()) }.getOrDefault(fallback)
 }

@@ -69,7 +69,7 @@ fun HomeScreen(link: String, state: AnalysisState, recent: List<DownloadEntity>,
                     Modifier.testTag("analyze"), enabled = !state.loading, click = analyze)
                 if (state.loading) {
                     LinearProgressIndicator(Modifier.fillMaxWidth())
-                    Text("Получаем название, превью и доступные форматы", style = MaterialTheme.typography.bodySmall,
+                    Text(state.message, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (state.error != null) {

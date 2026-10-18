@@ -38,7 +38,7 @@ class SettingsViewModel(private val graph: AppContainer) : ViewModel() {
         mutableUpdating.value = true
         viewModelScope.launch {
             try {
-                mutableVersion.value = graph.engine.update(); graph.settings.engineUpdated()
+                mutableVersion.value = graph.engineUpdates.manualUpdate()
                 events.emit("Загрузчик обновлён")
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { events.emit(ErrorMapper.message(e)) }

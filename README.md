@@ -14,8 +14,8 @@ A free, local-first Android video/audio downloader with a violet Compose interfa
 - Persistent sequential queue with foreground progress, speed, ETA, pause, resume, cancellation, retry and move-next priority.
 - Room history: active/complete/failed-and-canceled filters, search, details, rename, share, open, location, redownload and confirmed file/history deletion.
 - MediaStore destinations: `Movies/LinkGrab` and `Music/LinkGrab`. No broad storage/gallery permission.
-- DataStore preferences: appearance, default resolution/type/audio format, clipboard suggestions, completion notifications, optional daily engine auto-update.
-- Manual yt-dlp update and installed-version inspection.
+- DataStore preferences: appearance, default resolution/type/audio format, clipboard suggestions, completion notifications, automatic first-use/daily engine update (enabled by default, user can opt out).
+- On first link analysis LinkGrab attempts an upstream yt-dlp update (only when the default-enabled auto-update preference is on). Successful checks are cached for 24h, failed checks for 1h; the bundled engine remains usable offline. Extractor-specific failures can trigger one automatic refresh-and-retry if the cooldown permits. Manual updates and version inspection remain available.
 - Recovery of interrupted jobs, pending MediaStore rollback, and migration of LinkGrab 1.1 history.
 
 ## Build

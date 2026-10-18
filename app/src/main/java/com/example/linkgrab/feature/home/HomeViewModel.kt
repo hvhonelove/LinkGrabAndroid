@@ -12,7 +12,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 data class AnalysisState(val loading: Boolean = false, val metadata: VideoMetadata? = null,
-    val error: String? = null, val details: String? = null)
+    val error: String? = null, val details: String? = null,
+    val message: String = "Получаем название и форматы…")
 class HomeViewModel(private val graph: AppContainer, private val saved: SavedStateHandle) : ViewModel() {
     val link = saved.getStateFlow("link", "")
     private val mutableAnalysis = MutableStateFlow(AnalysisState())
@@ -31,7 +32,21 @@ class HomeViewModel(private val graph: AppContainer, private val saved: SavedSta
         job?.cancel()
         job = viewModelScope.launch {
             mutableAnalysis.value = AnalysisState(loading = true)
-            try { mutableAnalysis.value = AnalysisState(metadata = graph.engine.analyze(url)) }
+            try {
+                graph.engineUpdates.ensureReady { message ->
+                    mutableAnalysis.value = mutableAnalysis.value.copy(message = message)
+                }
+                mutableAnalysis.value = mutableAnalysis.value.copy(message = "Анализируем ссылку…")
+                val metadata = try { graph.engine.analyze(url) } catch (error: Exception) {
+                    if (error is CancellationException) throw error
+                    val recovered = graph.engineUpdates.tryRepair(error) { message ->
+                        mutableAnalysis.value = mutableAnalysis.value.copy(message = message)
+                    }
+                    if (!recovered) throw error
+                    graph.engine.analyze(url)
+                }
+                mutableAnalysis.value = AnalysisState(metadata = metadata)
+            }
             catch (error: CancellationException) { throw error }
             catch (error: Exception) { mutableAnalysis.value = AnalysisState(error = ErrorMapper.message(error), details = error.message?.takeLast(1600)) }
         }

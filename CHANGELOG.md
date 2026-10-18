@@ -1,3 +1,12 @@
+## 2.0.3 — First-use auto-update and self-repairing downloads
+
+- Enable opt-out automatic yt-dlp update checks by default, including on existing installs that have never changed this preference.
+- Check for engine updates before the first video link analysis; keep the bundled extractor available when offline or GitHub is unavailable.
+- Cache successful checks for 24 hours and failures for 1 hour to avoid hitting update servers repeatedly.
+- On extractor-related errors, attempt one refresh-and-retry where due; never retry indefinitely or update for local storage/FFmpeg failures.
+- Show readable update status in link analysis and download progress; manual update shares the same coordination lock.
+- Add JVM tests for update cadence and failure categories.
+
 ## 2.0.2 — Retry unavailable TikTok streams and expose download diagnostics
 
 - Prefer TikTok direct play formats ahead of potentially unavailable bitrate formats.

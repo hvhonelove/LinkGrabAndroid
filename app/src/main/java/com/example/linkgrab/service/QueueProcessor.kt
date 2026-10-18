@@ -27,12 +27,21 @@ class QueueProcessor(private val graph: AppContainer, private val notifications:
             }
         }
         try {
-            val settings = graph.settings.flow.first()
-            if (settings.autoUpdate && System.currentTimeMillis() - settings.lastEngineUpdate > 86_400_000) {
-                runCatching { graph.engine.update(); graph.settings.engineUpdated() }
+            graph.engineUpdates.ensureReady { phase ->
+                progressUpdates.trySend(com.example.linkgrab.domain.EngineProgress(-1f, 0, "", phase))
             }
             if (repo.dao.get(item.id)?.status != TaskStatus.RUNNING) return@coroutineScope
-            val file = graph.engine.download(item.id, item.url, item.options(), repo.workFolder(item.id)) { progressUpdates.trySend(it) }
+            val file = try {
+                graph.engine.download(item.id, item.url, item.options(), repo.workFolder(item.id)) { progressUpdates.trySend(it) }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                if (repo.dao.get(item.id)?.status != TaskStatus.RUNNING) throw error
+                val retry = graph.engineUpdates.tryRepair(error) { phase ->
+                    progressUpdates.trySend(com.example.linkgrab.domain.EngineProgress(-1f, 0, "", phase))
+                }
+                if (!retry || repo.dao.get(item.id)?.status != TaskStatus.RUNNING) throw error
+                graph.engine.download(item.id, item.url, item.options(), repo.workFolder(item.id)) { progressUpdates.trySend(it) }
+            }
             collector.cancelAndJoin()
             if (repo.dao.get(item.id)?.status != TaskStatus.RUNNING) return@coroutineScope
             repo.dao.progress(item.id, 100f, "", 0, "Обработка и сохранение")

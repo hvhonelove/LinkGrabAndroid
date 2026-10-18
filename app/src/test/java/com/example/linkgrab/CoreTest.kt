@@ -61,6 +61,22 @@ class CoreTest {
         assertFalse(text.contains("https://example.com"))
     }
 
+    @Test fun updatePolicyThrottlesAndRespectsFailures() {
+        val now = 1800000000000L
+        val day = com.example.linkgrab.data.engine.EngineUpdatePolicy.DAY_MS
+        val backoff = com.example.linkgrab.data.engine.EngineUpdatePolicy.RETRY_AFTER_FAILURE_MS
+        val policy = com.example.linkgrab.data.engine.EngineUpdatePolicy
+        assertTrue(policy.isDue(now, 0, 0))
+        assertFalse(policy.isDue(now, now - day + 1000, now - day + 1000))
+        assertTrue(policy.isDue(now, now - day - 1000, now - day - 1000))
+        assertFalse(policy.isDue(now, now - backoff + 1000, 0))
+        assertTrue(policy.isDue(now, now - backoff - 1000, 0))
+        assertTrue(policy.isRecoverableExtractorFailure("ERROR: Unable to extract video ID"))
+        assertTrue(policy.isRecoverableExtractorFailure("Requested format is not available"))
+        assertFalse(policy.isRecoverableExtractorFailure("ENOSPC: No space left on device"))
+        assertFalse(policy.isRecoverableExtractorFailure("FFmpeg conversion failed"))
+    }
+
     @Test fun qualityAndEstimate() {
         val info = VideoMetadata("https://example.com/v", "Title", null, 20, "Author", "Site", listOf(
             MediaFormat("video", 720, "mp4", 10_000, true, false), MediaFormat("audio", 0, "m4a", 2_000, false, true)))

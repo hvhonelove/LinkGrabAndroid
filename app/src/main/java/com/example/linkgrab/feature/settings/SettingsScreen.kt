@@ -44,7 +44,7 @@ fun SettingsScreen(settings: AppSettings, version: String, updating: Boolean,
         item { PremiumCard {
             Text("Загрузчик yt-dlp", style = MaterialTheme.typography.titleMedium)
             Text(version, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            SettingSwitch("Обновлять автоматически", "Перед загрузкой, не чаще раза в сутки. Нужен доступ к GitHub.", settings.autoUpdate) { flag("autoUpdate", it) }
+            SettingSwitch("Обновлять автоматически", "Автоматически перед первым анализом ссылки, затем раз в сутки. При сбое используется встроенная версия.", settings.autoUpdate) { flag("autoUpdate", it) }
             PrimaryButton(if (updating) "Обновление…" else "Обновить загрузчик", Icons.Outlined.SystemUpdate,
                 enabled = !updating, click = update)
             TextButton(onClick = refreshVersion) { Text("Проверить установленную версию") }
