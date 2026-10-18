@@ -39,6 +39,9 @@ fun PreviewScreen(metadata: VideoMetadata, settings: AppSettings, submitting: Bo
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             MediaThumbnail(metadata.thumbnail, Modifier.fillMaxWidth().aspectRatio(16f / 9), large = true)
             SourceBadge(metadata.source)
+            if (LinkParser.isTikTok(metadata.url)) Text(
+                "TikTok · без водяного знака\nВыбираем поток воспроизведения и исключаем версии с водяным знаком TikTok. Надписи, добавленные автором в само видео, останутся.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(metadata.title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.testTag("preview-title"))
             Text(listOf(metadata.uploader, durationLabel(metadata.duration)).filter { it.isNotBlank() }.joinToString(" · "),
                 color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)

@@ -5,7 +5,7 @@ LinkGrab application code: Copyright 2026 LinkGrab contributors, **GPL-3.0-only*
 | Component | Pinned version / source | License notes |
 | --- | --- | --- |
 | youtubedl-android + FFmpeg wrapper | [0.18.1](https://github.com/yausername/youtubedl-android/tree/0.18.1) | GPL-3.0; includes native runtime packages; see upstream README/build provenance |
-| yt-dlp | Bundled by wrapper; optionally replaced using upstream stable updater | yt-dlp core is Unlicense; its bundled dependencies carry their respective licenses. [Source](https://github.com/yt-dlp/yt-dlp) |
+| yt-dlp | Official 2026.08.19 Python zip executable, SHA-256 pinned in app/build.gradle.kts; optionally replaced using upstream stable updater | Core is Unlicense (YTDLP-LICENSE.txt); bundled JavaScript retains ISC/MIT notices. Includes yt-dlp-ejs 0.8.0 under Unlicense. [Matching source](https://github.com/yt-dlp/yt-dlp/tree/2026.08.19), [EJS source](https://github.com/yt-dlp/ejs/tree/0.8.0) |
 | FFmpeg native runtime | Distributed by wrapper's `ffmpeg` artifact | FFmpeg licensing depends on build configuration; comply with matching upstream GPL/LGPL component obligations. [Source](https://ffmpeg.org/download.html) |
 | Python / QuickJS | Distributed by wrapper | PSF / MIT respective source components and third-party notices; refer to the wrapper's matching native build provenance |
 | AndroidX / Compose / Room / DataStore | Pinned in app/build.gradle.kts | Apache-2.0; [AndroidX source](https://android.googlesource.com/platform/frameworks/support/) |

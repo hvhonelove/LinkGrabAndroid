@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.1
+
+- Added explicit TikTok and VK Video source labels and home chips.
+- Canonicalized TikTok Android-share, embed and short links; removed sharing/tracking parameters from TikTok video URLs.
+- Added VK domain/mobile/encoded-player URL normalization while preserving access and embed parameters.
+- Excluded TikTok watermarked/download variants in both metadata previews and video/audio download selectors; no silent branded fallback.
+- Bundled SHA-256-verified yt-dlp 2026.08.19 and migrated older installed engines atomically without downgrading newer manual updates.
+- Added platform URL regression tests and native selector tests rejecting a higher-resolution watermarked format and a watermarked-only source.
+- Stabilized the rename UI regression test by waiting for the queue snackbar to disappear.
+
 ## 2.0.0
 
 - Replaced programmatic Android views with reusable Compose components, violet light/dark/system themes and adaptive inset handling.

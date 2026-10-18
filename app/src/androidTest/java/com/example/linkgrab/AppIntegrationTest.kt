@@ -38,7 +38,7 @@ class AppIntegrationTest {
     @After fun tearDown() { scenario?.close() }
     @Test fun realEngineToMediaStoreAndCompose() {
         val bytes = InstrumentationRegistry.getInstrumentation().context.assets.open("fixture.mp4").use { it.readBytes() }
-        assertTrue(runBlocking { graph.engine.checkVersion() }.any { it.isDigit() })
+        assertTrue(runBlocking { graph.engine.checkVersion() }.take(10) >= BuildConfig.BUNDLED_YTDLP_VERSION)
         FixtureServer(bytes).use { server ->
             scenario = ActivityScenario.launch(MainActivity::class.java)
             compose.waitUntil(20000) { compose.onAllNodesWithTag("onboarding-next").fetchSemanticsNodes().isNotEmpty() }
@@ -57,6 +57,8 @@ class AppIntegrationTest {
             assertNotNull(item.uri)
             val downloaded = context.contentResolver.openInputStream(Uri.parse(item.uri))!!.use { it.readBytes() }
             assertArrayEquals(bytes, downloaded)
+            // The queue snackbar overlays the bottom of the scrollable details screen.
+            compose.waitUntil(10000) { compose.onAllNodesWithText("Добавлено в очередь").fetchSemanticsNodes().isEmpty() }
             compose.onNodeWithText("Готовые").performClick()
             screenshot("04-history")
             compose.onNodeWithTag("task-${item.id}").performClick()

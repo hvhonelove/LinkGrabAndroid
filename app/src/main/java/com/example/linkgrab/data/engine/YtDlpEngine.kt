@@ -2,6 +2,7 @@ package com.example.linkgrab.data.engine
 
 import android.content.Context
 import com.example.linkgrab.core.LinkParser
+import com.example.linkgrab.core.DownloadPolicy
 import com.example.linkgrab.domain.*
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
@@ -17,35 +18,47 @@ import java.util.concurrent.atomic.AtomicInteger
 class YtDlpEngine(private val context: Context) : VideoEngine {
     private val setupLock = Mutex()
     private val running = AtomicInteger()
+    private val bundled = BundledYtDlp(context)
     @Volatile private var checkedVersion: String? = null
     private suspend fun begin() = setupLock.withLock {
-        withContext(Dispatchers.IO) { YoutubeDL.init(context); FFmpeg.getInstance().init(context) }
+        withContext(Dispatchers.IO) {
+            checkedVersion = bundled.prepare()
+            YoutubeDL.init(context); FFmpeg.getInstance().init(context)
+        }
         running.incrementAndGet()
     }
     override suspend fun analyze(url: String): VideoMetadata {
-        require(LinkParser.isValid(url)) { "Вставь корректную ссылку http:// или https://" }
+        val normalized = LinkParser.normalize(url)
+        require(LinkParser.isValid(normalized)) { "Вставь корректную ссылку http:// или https://" }
         begin()
         val process = "metadata-${UUID.randomUUID()}"
         try {
-            val request = baseRequest(url).apply {
+            val request = baseRequest(normalized).apply {
                 addOption("--dump-single-json"); addOption("--skip-download")
             }
             val raw = runInterruptible(Dispatchers.IO) { YoutubeDL.execute(request, process, false, null).out }
             val json = JSONObject(raw)
+            val page = LinkParser.normalize(json.optString("webpage_url").takeIf { LinkParser.isValid(it) } ?: normalized)
+            val tikTok = LinkParser.isTikTok(page) || LinkParser.isTikTok(normalized)
             require(!json.has("entries")) { "Это плейлист или подборка. Выбери ссылку на одно видео." }
             require(!json.optBoolean("has_drm")) { "Видео защищено DRM." }
             require(!json.optBoolean("is_live")) { "Прямые эфиры не поддерживаются. Дождись окончания трансляции." }
             val array = json.optJSONArray("formats")
             val formats = (0 until (array?.length() ?: 0)).map { array!!.getJSONObject(it) }
-                .ifEmpty { listOf(json) }.filter { !it.optBoolean("has_drm") }.map {
+                .ifEmpty { listOf(json) }.filter {
+                    !it.optBoolean("has_drm") && (!tikTok || DownloadPolicy.isAllowedTikTokFormat(
+                        it.optString("format_id"), it.optString("format_note")))
+                }.map {
                     MediaFormat(it.optString("format_id"), it.optInt("height"), it.optString("ext"),
                         it.optLong("filesize").takeIf { n -> n > 0 } ?: it.optLong("filesize_approx"),
                         it.optString("vcodec", "none") != "none", it.optString("acodec", "none") != "none")
                 }
-            return VideoMetadata(url, json.optString("title").ifBlank { "Видео" },
+            require(formats.isNotEmpty()) { "TikTok не предоставил доступный поток без водяного знака. Обнови загрузчик и попробуй позже." }
+            require(!tikTok || formats.any { it.video }) { "TikTok не предоставил видео без водяного знака. Обнови загрузчик и попробуй позже." }
+            return VideoMetadata(page, json.optString("title").ifBlank { "Видео" },
                 json.optString("thumbnail").takeIf { LinkParser.isValid(it) },
                 json.optDouble("duration", 0.0).toLong(), json.optString("uploader").ifBlank { json.optString("channel") },
-                LinkParser.source(url), formats)
+                LinkParser.source(page), formats)
         } finally {
             withContext(NonCancellable + Dispatchers.IO) { YoutubeDL.destroyProcessById(process) }
             running.decrementAndGet()
@@ -60,11 +73,10 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
                 addOption("--newline"); addOption("--continue"); addOption("--no-mtime")
                 addOption("-o", File(folder, "media.%(ext)s").absolutePath)
                 if (options.kind == MediaKind.AUDIO) {
-                    addOption("-f", "ba/b"); addOption("-x")
+                    addOption("-f", DownloadPolicy.selector(url, options.quality, audio = true)); addOption("-x")
                     addOption("--audio-format", if (options.format == ContainerFormat.MP3) "mp3" else "m4a")
                 } else {
-                    val limit = if (options.quality > 0) "[height<=${options.quality}]" else ""
-                    addOption("-f", "bv*$limit+ba/b$limit")
+                    addOption("-f", DownloadPolicy.selector(url, options.quality, audio = false))
                     addOption("-S", "res,ext:mp4:m4a")
                     when (options.format) {
                         ContainerFormat.MP4 -> { addOption("--merge-output-format", "mp4"); addOption("--remux-video", "mp4") }
@@ -99,7 +111,7 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
         withContext(Dispatchers.IO) {
             YoutubeDL.init(context)
             YoutubeDL.updateYoutubeDL(context, YoutubeDL.UpdateChannel.STABLE)
-            checkedVersion = null
+            checkedVersion = YoutubeDL.versionName(context) ?: YoutubeDL.version(context)
             version()
         }
     }
@@ -118,7 +130,7 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
         }
     }
     override fun version() = checkedVersion ?: YoutubeDL.versionName(context) ?: YoutubeDL.version(context) ?: "Встроенная версия"
-    private fun baseRequest(url: String) = YoutubeDLRequest(url).apply {
+    private fun baseRequest(url: String) = YoutubeDLRequest(LinkParser.normalize(url)).apply {
         addOption("--no-playlist"); addOption("--socket-timeout", "20"); addOption("--retries", "2")
     }
 }

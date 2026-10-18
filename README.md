@@ -6,6 +6,8 @@ A free, local-first Android video/audio downloader with a violet Compose interfa
 
 ## Features
 
+- TikTok long Android-share links and `vm`/`vt`/`t` short links; canonical video URLs discard tracking parameters. TikTok video selection excludes `download*` / watermarked formats rather than silently falling back to a branded download. Author-added text/logos remain.
+- VK public video/clip links from `vk.com`, `vk.ru`, `vkvideo.ru`, mobile and encoded `z=video…` player links. Access/hash/list query parameters are preserved. Site-side access and regional restrictions still apply.
 - First-launch onboarding and native splash screen.
 - Paste a link, receive Android Share text, or opt in to a clipboard suggestion on resume.
 - Analyze links with the actual bundled yt-dlp executable: title, source, uploader, thumbnail, duration, available standard resolutions and size estimates when supplied by the source.
@@ -20,6 +22,8 @@ A free, local-first Android video/audio downloader with a violet Compose interfa
 ## Build
 
 Requirements: JDK 17; Android SDK platform 36 and build tools 35.0.0. The Gradle wrapper pins **8.11.1**, AGP **8.10.1**, Kotlin/Compose compiler **2.1.20**, Compose BOM **2025.05.01**, Room **2.7.1**, and youtubedl-android **0.18.1**. These are a pinned compatible baseline rather than floating latest dependencies.
+
+The build downloads the official Python zip executable **yt-dlp 2026.08.19** and verifies SHA-256 `1fa6733c37ea6fb51c99ad8fe785e7b7e5f3246c9b980230329d4fb72ed8d4d6` before packaging it as a raw resource. This replaces the wrapper's older embedded engine. No engine download is needed on first launch. App upgrades atomically replace older persisted engines while preserving newer versions installed by the in-app updater. Building therefore needs access to the pinned GitHub release as well as Maven dependencies.
 
 ```sh
 # Set ANDROID_HOME or configure sdk.dir in local.properties.

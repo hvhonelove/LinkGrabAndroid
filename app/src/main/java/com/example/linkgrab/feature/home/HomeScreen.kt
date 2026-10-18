@@ -28,6 +28,7 @@ import com.example.linkgrab.domain.TaskStatus
 import com.example.linkgrab.ui.components.*
 import com.example.linkgrab.feature.downloads.DownloadCard
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(link: String, state: AnalysisState, recent: List<DownloadEntity>, clipboardSuggestion: String?,
     onLink: (String) -> Unit, paste: () -> Unit, analyze: () -> Unit, showDownloads: () -> Unit,
@@ -83,10 +84,11 @@ fun HomeScreen(link: String, state: AnalysisState, recent: List<DownloadEntity>,
             }
         }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf("YouTube", "X / Twitter", "+ сайты").forEach {
-                    Surface(Modifier.weight(1f), color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp)) {
-                        Text(it, Modifier.padding(vertical = 14.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("YouTube", "TikTok", "VK Видео", "X / Twitter", "+ сайты").forEach {
+                    Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp)) {
+                        Text(it, Modifier.padding(horizontal = 14.dp, vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
                     }
                 }
