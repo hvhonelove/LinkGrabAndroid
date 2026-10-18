@@ -133,8 +133,20 @@ class AppIntegrationTest {
     private fun screenshot(name: String) {
         compose.waitForIdle()
         val folder = File(context.getExternalFilesDir(null), "screenshots").apply { mkdirs() }
-        val image = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot() ?: return
-        File(folder, "$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        image.recycle()
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val image = automation.takeScreenshot()
+        val target = File(folder, "$name.png")
+        if (image != null) {
+            target.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            image.recycle()
+        } else {
+            // Android 16 can return null from accessibility screenshots; the shell
+            // framebuffer capture is independent of that accessibility connection.
+            val descriptor = automation.executeShellCommand("/system/bin/screencap -p")
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { input ->
+                target.outputStream().use { input.copyTo(it) }
+            }
+        }
+        check(target.length() > 1000) { "Screenshot capture returned no image: $name" }
     }
 }
