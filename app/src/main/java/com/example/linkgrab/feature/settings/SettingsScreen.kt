@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.example.linkgrab.BuildConfig
 import com.example.linkgrab.core.qualityLabel
@@ -65,7 +67,7 @@ private fun SettingSwitch(title: String, hint: String, checked: Boolean, change:
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked, change)
+        Switch(checked, change, modifier = Modifier.semantics { contentDescription = title })
     }
 }
 @Composable

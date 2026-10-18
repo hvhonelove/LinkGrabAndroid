@@ -64,6 +64,7 @@ jobs:
         run: gradle --no-daemon -PtestAbi=x86_64 :app:assembleDebug :app:assembleDebugAndroidTest
       - uses: reactivecircus/android-emulator-runner@v2
         with:
+          disk-size: 4096M
           emulator-boot-timeout: 240
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -feature -Vulkan
           api-level: 36

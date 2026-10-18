@@ -9,6 +9,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -119,7 +121,7 @@ fun LinkGrabApp(graph: AppContainer, home: HomeViewModel, fileAction: (DownloadE
                                     home.enqueue(context, options) { tab = 1 }
                                 }
                                 "tab1" -> DownloadsScreen(entries, { detailId = it }, { downloads.retry(context, it) }, downloads::pause,
-                                    downloads::cancel, downloads::next, { downloads.startQueue(context) }, { tab = 0 })
+                                    downloads::cancel, downloads::next, { downloads.startQueue(context) }, { tab = 0 }, fileAction)
                                 "tab2" -> SettingsScreen(preferences, version, updating, settingsVm::text, settingsVm::flag, settingsVm::quality,
                                     settingsVm::updateEngine, settingsVm::refreshVersion, notifications, { about = true })
                                 else -> HomeScreen(link, analysis, entries, suggestion, home::setLink,
@@ -148,11 +150,11 @@ private fun BottomTabs(selected: Int, select: (Int) -> Unit) {
             val icons = listOf(Icons.Outlined.Home, Icons.Outlined.Downloading, Icons.Outlined.Tune)
             val labels = listOf("Главная", "Загрузки", "Настройки")
             repeat(3) { index ->
-                Surface(Modifier.weight(1f).testTag("nav-$index").clickable { select(index) },
+                Surface(Modifier.weight(1f).testTag("nav-$index").selectable(selected == index, role = Role.Tab) { select(index) },
                     shape = RoundedCornerShape(20.dp), color = if (selected == index) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface) {
                     Column(Modifier.padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(icons[index], labels[index], tint = if (selected == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(icons[index], null, tint = if (selected == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(labels[index], style = MaterialTheme.typography.bodySmall,
                             color = if (selected == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }

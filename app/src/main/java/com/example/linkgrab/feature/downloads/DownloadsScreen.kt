@@ -23,7 +23,8 @@ import java.util.Date
 
 @Composable
 fun DownloadsScreen(items: List<DownloadEntity>, details: (Long) -> Unit, retry: (Long) -> Unit,
-    pause: (Long) -> Unit, cancel: (Long) -> Unit, next: (Long) -> Unit, startQueue: () -> Unit, home: () -> Unit) {
+    pause: (Long) -> Unit, cancel: (Long) -> Unit, next: (Long) -> Unit, startQueue: () -> Unit, home: () -> Unit,
+    fileAction: (DownloadEntity, FileAction) -> Unit) {
     var filter by rememberSaveable { mutableIntStateOf(0) }
     var query by rememberSaveable { mutableStateOf("") }
     val active = setOf(TaskStatus.QUEUED, TaskStatus.RUNNING, TaskStatus.PAUSED)
@@ -50,7 +51,18 @@ fun DownloadsScreen(items: List<DownloadEntity>, details: (Long) -> Unit, retry:
             }, button = if (filter < 2 && query.isBlank()) "Добавить ссылку" else null, click = home)
         }
         items(filtered, key = { it.id }) { item ->
-            DownloadCard(item, { details(item.id) }, actions = {
+            val menu = buildList<Pair<String, () -> Unit>> {
+                add("Детали файла" to { details(item.id) })
+                if (item.status == TaskStatus.COMPLETED) {
+                    add("Открыть" to { fileAction(item, FileAction.OPEN) })
+                    add("Поделиться" to { fileAction(item, FileAction.SHARE) })
+                }
+                if (item.status in setOf(TaskStatus.FAILED, TaskStatus.PAUSED, TaskStatus.CANCELED)) add("Продолжить / повторить" to { retry(item.id) })
+                if (item.status == TaskStatus.RUNNING) add("Пауза" to { pause(item.id) })
+                if (item.status == TaskStatus.QUEUED) add("Следующим" to { next(item.id) })
+                if (item.status in active) add("Отменить" to { cancel(item.id) })
+            }
+            DownloadCard(item, { details(item.id) }, menuActions = menu, actions = {
                 when (item.status) {
                     TaskStatus.RUNNING -> TextButton(onClick = { pause(item.id) }) { Icon(Icons.Outlined.Pause, null); Text("Пауза") }
                     TaskStatus.PAUSED -> TextButton(onClick = { retry(item.id) }) { Icon(Icons.Outlined.PlayArrow, null); Text("Продолжить") }
@@ -64,7 +76,8 @@ fun DownloadsScreen(items: List<DownloadEntity>, details: (Long) -> Unit, retry:
     }
 }
 @Composable
-fun DownloadCard(item: DownloadEntity, openDetails: () -> Unit, actions: (@Composable RowScope.() -> Unit)? = null) {
+fun DownloadCard(item: DownloadEntity, openDetails: () -> Unit, menuActions: List<Pair<String, () -> Unit>> = emptyList(),
+    actions: (@Composable RowScope.() -> Unit)? = null) {
     PremiumCard(Modifier.clickable(onClick = openDetails).testTag("task-${item.id}")) {
         Row(horizontalArrangement = Arrangement.spacedBy(13.dp), verticalAlignment = Alignment.CenterVertically) {
             MediaThumbnail(item.thumbnail, Modifier.size(76.dp))
@@ -75,7 +88,18 @@ fun DownloadCard(item: DownloadEntity, openDetails: () -> Unit, actions: (@Compo
                 Text(statusLabel(item), style = MaterialTheme.typography.bodySmall,
                     color = if (item.status == TaskStatus.FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             }
-            Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (menuActions.isEmpty()) Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            else {
+                var expanded by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { expanded = true }) { Icon(Icons.Outlined.MoreVert, "Действия с загрузкой") }
+                    DropdownMenu(expanded, onDismissRequest = { expanded = false }) {
+                        menuActions.forEach { (label, command) ->
+                            DropdownMenuItem(text = { Text(label) }, onClick = { expanded = false; command() })
+                        }
+                    }
+                }
+            }
         }
         if (item.status == TaskStatus.RUNNING) {
             if (item.progress < 0) LinearProgressIndicator(Modifier.fillMaxWidth())
