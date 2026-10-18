@@ -148,5 +148,13 @@ class AppIntegrationTest {
             }
         }
         check(target.length() > 1000) { "Screenshot capture returned no image: $name" }
+        // Gradle uninstalls test apps before the CI script regains control.
+        // Shell-owned output survives that cleanup and can be pulled with adb.
+        listOf("mkdir -p /data/local/tmp/linkgrab-screenshots",
+            "/system/bin/screencap -p /data/local/tmp/linkgrab-screenshots/$name.png").forEach { command ->
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).use {
+                it.readBytes()
+            }
+        }
     }
 }
