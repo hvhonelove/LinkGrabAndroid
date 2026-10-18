@@ -8,6 +8,7 @@ A free, local-first Android video/audio downloader with a violet Compose interfa
 
 - First-launch onboarding and native splash screen.
 - Paste a link, receive Android Share text, or opt in to a clipboard suggestion on resume.
+- TikTok (`www.tiktok.com/@user/video/id`, `vm.tiktok.com`, `vt.tiktok.com`) and VK Видео (`vk.com/video...`, `vkvideo.ru/video...`) are recognized. Public TikTok share URLs are cleaned of tracking parameters; VK access query parameters are preserved. The downloader prioritizes TikTok streams not marked as watermarked, when exposed by yt-dlp.
 - Analyze links with the actual bundled yt-dlp executable: title, source, uploader, thumbnail, duration, available standard resolutions and size estimates when supplied by the source.
 - Video: best, 1080p, 720p, 480p when listed by the source; automatic MP4-preferred container or explicit MP4/WebM. Audio: M4A/MP3 through FFmpeg.
 - Persistent sequential queue with foreground progress, speed, ETA, pause, resume, cancellation, retry and move-next priority.
@@ -81,6 +82,7 @@ CI artifacts: `LinkGrab-2-android-arm64-apk`, `LinkGrab-build-reports`, `LinkGra
 
 ## Honest limitations
 
+- Watermark-free TikTok is best-effort: LinkGrab cannot remove watermarks already embedded in video frames. If no suitable clean stream is available, the download may fail rather than select a known watermarked stream.
 - Site support and metadata completeness are controlled by yt-dlp and the source. No cookies/login, CAPTCHA, DRM bypass, live-stream capture, playlist downloading, or guarantee that any particular site is available.
 - Pausing is stop-and-resume of partial files, not a suspended TCP session. Some sources require restarting from zero. FFmpeg postprocessing can be indeterminate; displayed speed/ETA may be absent or apply to one stream of a video/audio merge.
 - Automatic mode prefers MP4 but can produce WebM or MKV. Explicit remuxing cannot make an incompatible codec compatible. Audio conversion may take additional time; estimated sizes are not guarantees.

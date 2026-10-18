@@ -39,6 +39,10 @@ fun PreviewScreen(metadata: VideoMetadata, settings: AppSettings, submitting: Bo
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             MediaThumbnail(metadata.thumbnail, Modifier.fillMaxWidth().aspectRatio(16f / 9), large = true)
             SourceBadge(metadata.source)
+            if (metadata.source == "TikTok") {
+                Text("LinkGrab предпочитает видео без водяного знака, если исходный поток доступен.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            }
             Text(metadata.title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.testTag("preview-title"))
             Text(listOf(metadata.uploader, durationLabel(metadata.duration)).filter { it.isNotBlank() }.joinToString(" · "),
                 color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)

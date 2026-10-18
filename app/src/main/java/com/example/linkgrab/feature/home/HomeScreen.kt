@@ -83,10 +83,11 @@ fun HomeScreen(link: String, state: AnalysisState, recent: List<DownloadEntity>,
             }
         }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf("YouTube", "X / Twitter", "+ сайты").forEach {
-                    Surface(Modifier.weight(1f), color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp)) {
-                        Text(it, Modifier.padding(vertical = 14.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf("YouTube", "X / Twitter", "TikTok", "VK Видео", "+ сайты").forEach { site ->
+                    Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp)) {
+                        Text(site, Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
                             style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
                     }
                 }

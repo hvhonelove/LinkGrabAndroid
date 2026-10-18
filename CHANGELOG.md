@@ -1,3 +1,10 @@
+## Unreleased — TikTok and VK Видео improvements
+
+- Recognize TikTok, TikTok short links, VK Video and vkvideo.ru URLs.
+- Strip public TikTok share tracking while retaining VK access parameters.
+- Prefer TikTok clean playback streams and filter out formats labeled as watermarked.
+- Add home source chips, preview note, URL regression tests and format-selector tests.
+
 # Changelog
 
 ## 2.0.0

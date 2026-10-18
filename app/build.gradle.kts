@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.linkgrab"
         minSdk = 29
         targetSdk = 36
-        versionCode = 20
-        versionName = "2.0.0"
+        versionCode = 21
+        versionName = "2.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += setOf(providers.gradleProperty("testAbi").getOrElse("arm64-v8a")) }
     }

@@ -2,6 +2,7 @@ package com.example.linkgrab.data.engine
 
 import android.content.Context
 import com.example.linkgrab.core.LinkParser
+import com.example.linkgrab.core.DownloadFormatSelector
 import com.example.linkgrab.domain.*
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
@@ -42,7 +43,7 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
                         it.optLong("filesize").takeIf { n -> n > 0 } ?: it.optLong("filesize_approx"),
                         it.optString("vcodec", "none") != "none", it.optString("acodec", "none") != "none")
                 }
-            return VideoMetadata(url, json.optString("title").ifBlank { "Видео" },
+            return VideoMetadata(LinkParser.normalize(url), json.optString("title").ifBlank { "Видео" },
                 json.optString("thumbnail").takeIf { LinkParser.isValid(it) },
                 json.optDouble("duration", 0.0).toLong(), json.optString("uploader").ifBlank { json.optString("channel") },
                 LinkParser.source(url), formats)
@@ -63,8 +64,7 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
                     addOption("-f", "ba/b"); addOption("-x")
                     addOption("--audio-format", if (options.format == ContainerFormat.MP3) "mp3" else "m4a")
                 } else {
-                    val limit = if (options.quality > 0) "[height<=${options.quality}]" else ""
-                    addOption("-f", "bv*$limit+ba/b$limit")
+                    addOption("-f", DownloadFormatSelector.video(url, options.quality))
                     addOption("-S", "res,ext:mp4:m4a")
                     when (options.format) {
                         ContainerFormat.MP4 -> { addOption("--merge-output-format", "mp4"); addOption("--remux-video", "mp4") }
@@ -118,7 +118,7 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
         }
     }
     override fun version() = checkedVersion ?: YoutubeDL.versionName(context) ?: YoutubeDL.version(context) ?: "Встроенная версия"
-    private fun baseRequest(url: String) = YoutubeDLRequest(url).apply {
+    private fun baseRequest(url: String) = YoutubeDLRequest(LinkParser.normalize(url)).apply {
         addOption("--no-playlist"); addOption("--socket-timeout", "20"); addOption("--retries", "2")
     }
 }
