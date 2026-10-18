@@ -10,11 +10,14 @@ android {
         applicationId = "com.example.linkgrab"
         minSdk = 29
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
         ndk {
-            abiFilters += setOf("arm64-v8a")
+            abiFilters += setOf(providers.gradleProperty("testAbi").getOrElse("arm64-v8a"))
         }
+    }
+    buildFeatures {
+        buildConfig = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -34,3 +37,4 @@ dependencies {
     implementation("io.github.junkfood02.youtubedl-android:library:$version")
     implementation("io.github.junkfood02.youtubedl-android:ffmpeg:$version")
 }
+

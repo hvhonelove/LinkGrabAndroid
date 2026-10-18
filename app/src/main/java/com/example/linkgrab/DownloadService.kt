@@ -10,6 +10,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
@@ -28,9 +30,12 @@ class DownloadService : Service() {
         const val EXTRA_STATUS = "status"
         const val EXTRA_PROGRESS = "progress"
         const val EXTRA_BUSY = "busy"
+        const val EXTRA_STATE = "state"
         private const val CHANNEL = "linkgrab_downloads"
         private const val FOREGROUND_ID = 101
         private const val PROCESS_ID = "linkgrab-process"
+        @Volatile var latestState = "idle"
+            private set
         @Volatile var active = false
             private set
         @Volatile var latestStatus = ""
@@ -67,22 +72,33 @@ class DownloadService : Service() {
             ACTION_DOWNLOAD, ACTION_UPDATE -> {
                 if (active) return START_NOT_STICKY
                 active = true
+                latestState = "working"
+                lastUpdate = 0L
                 cancelRequested = false
                 startForeground(FOREGROUND_ID, notification("Подготовка…", -1))
                 val action = intent.action
                 val url = intent.getStringExtra(EXTRA_URL).orEmpty()
                 val quality = intent.getIntExtra(EXTRA_QUALITY, 0)
                 Thread({
+                    var message: String
+                    var state: String
+                    var percentage = -1
                     try {
-                        if (action == ACTION_UPDATE) updateEngine() else download(url, quality)
+                        message = if (action == ACTION_UPDATE) updateEngine() else download(url, quality)
+                        state = "success"
+                        percentage = 100
                     } catch (e: Exception) {
-                        val result = if (cancelRequested) "Загрузка отменена"
-                        else "Ошибка: " + (e.message ?: e.javaClass.simpleName).takeLast(450)
-                        showStatus(result, -1, false)
-                    } finally {
+                        state = if (cancelRequested) "cancelled" else "error"
+                        message = if (cancelRequested) "Можно вставить другую ссылку и попробовать снова."
+                        else friendlyError(e)
+                    }
+                    Handler(Looper.getMainLooper()).post {
                         active = false
+                        latestState = state
+                        showStatus(message, percentage, false)
                         stopForeground(STOP_FOREGROUND_REMOVE)
-                        stopSelf()
+                        if (state == "error") finishedNotification("Не удалось скачать. Открой LinkGrab для подробностей.", null)
+                        stopSelf(startId)
                     }
                 }, "LinkGrab-Worker").start()
                 return START_NOT_STICKY
@@ -99,18 +115,19 @@ class DownloadService : Service() {
         if (cancelRequested) throw InterruptedException("Отменено")
     }
 
-    private fun updateEngine() {
+    private fun updateEngine(): String {
         initEngine()
         showStatus("Обновление yt-dlp…", -1)
         val result = YoutubeDL.getInstance().updateYoutubeDL(
             applicationContext, YoutubeDL.UpdateChannel.STABLE
         )
-        showStatus("yt-dlp обновлён: " + result, 100, false)
-        finishedNotification("yt-dlp обновлён", null)
+        if (cancelRequested) throw InterruptedException("Отменено")
+        finishedNotification("Загрузчик обновлён", null)
+        return "Загрузчик готов к работе · " + result
     }
 
-    private fun download(url: String, selectedQuality: Int) {
-        require(url.startsWith("https://") || url.startsWith("http://")) {
+    private fun download(url: String, selectedQuality: Int): String {
+        require(LinkParser.isValid(url)) {
             "Укажи ссылку на видео"
         }
         initEngine()
@@ -151,8 +168,12 @@ class DownloadService : Service() {
                     setOf("mp4", "webm", "mkv", "mov")
             }?.maxByOrNull { it.length() } ?: error("Видео не найдено")
             val saved = saveToGallery(video)
-            showStatus("Сохранено: Фильмы/LinkGrab/" + video.name, 100, false)
+            DownloadHistory.add(this, SavedVideo(
+                saved.toString(), video.nameWithoutExtension, LinkParser.source(url),
+                video.length(), System.currentTimeMillis(), selectedQuality
+            ))
             finishedNotification("Видео сохранено", saved)
+            return "Видео в галерее и на вкладке «Загрузки» · " + video.name
         } finally {
             work.deleteRecursively()
         }
@@ -180,7 +201,15 @@ class DownloadService : Service() {
             file.inputStream().buffered().use { input ->
                 val output = resolver.openOutputStream(target, "w")
                     ?: error("Не удалось открыть файл")
-                output.buffered().use { input.copyTo(it) }
+                output.buffered().use { stream ->
+                    val buffer = ByteArray(64 * 1024)
+                    while (true) {
+                        if (cancelRequested) throw InterruptedException("Отменено")
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        stream.write(buffer, 0, count)
+                    }
+                }
             }
             resolver.update(target, ContentValues().apply {
                 put(MediaStore.Video.Media.IS_PENDING, 0)
@@ -200,8 +229,23 @@ class DownloadService : Service() {
             putExtra(EXTRA_STATUS, message)
             putExtra(EXTRA_PROGRESS, percentage)
             putExtra(EXTRA_BUSY, busy)
+            putExtra(EXTRA_STATE, latestState)
         })
         if (busy) notifications.notify(FOREGROUND_ID, notification(message, percentage))
+    }
+
+    private fun friendlyError(error: Exception): String {
+        val details = (error.message ?: error.javaClass.simpleName).takeLast(1200)
+        val hint = when {
+            details.contains("sign in", true) || details.contains("login", true) ||
+                details.contains("private", true) -> "Видео требует входа или закрыто для просмотра. Попробуй публичную ссылку."
+            details.contains("Unsupported URL", true) -> "Эта ссылка не поддерживается. Скопируй прямую ссылку на ролик."
+            details.contains("network", true) || details.contains("resolve", true) ||
+                details.contains("timed out", true) -> "Проверь интернет и попробуй снова."
+            details.contains("space", true) -> "На телефоне не хватает свободного места."
+            else -> "Попробуй ещё раз или обнови загрузчик в настройках."
+        }
+        return hint + "\n\nДетали: " + details.takeLast(450)
     }
 
     private fun notification(message: String, percentage: Int): Notification {
@@ -246,3 +290,4 @@ class DownloadService : Service() {
         )
     }
 }
+
