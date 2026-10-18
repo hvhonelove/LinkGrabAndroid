@@ -9,4 +9,5 @@ interface VideoEngine {
     suspend fun cancel(id: Long)
     suspend fun update(): String
     fun version(): String
+    suspend fun checkVersion(): String
 }

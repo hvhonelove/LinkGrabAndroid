@@ -38,6 +38,7 @@ class AppIntegrationTest {
     @After fun tearDown() { scenario?.close() }
     @Test fun realEngineToMediaStoreAndCompose() {
         val bytes = InstrumentationRegistry.getInstrumentation().context.assets.open("fixture.mp4").use { it.readBytes() }
+        assertTrue(runBlocking { graph.engine.checkVersion() }.any { it.isDigit() })
         FixtureServer(bytes).use { server ->
             scenario = ActivityScenario.launch(MainActivity::class.java)
             compose.waitUntil(20000) { compose.onAllNodesWithTag("onboarding-next").fetchSemanticsNodes().isNotEmpty() }

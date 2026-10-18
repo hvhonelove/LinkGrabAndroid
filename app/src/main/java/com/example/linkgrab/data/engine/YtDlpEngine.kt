@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class YtDlpEngine(private val context: Context) : VideoEngine {
     private val setupLock = Mutex()
     private val running = AtomicInteger()
+    @Volatile private var checkedVersion: String? = null
     private suspend fun begin() = setupLock.withLock {
         withContext(Dispatchers.IO) { YoutubeDL.init(context); FFmpeg.getInstance().init(context) }
         running.incrementAndGet()
@@ -88,7 +89,7 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
                     progress(EngineProgress(value.coerceIn(-1f, 100f), if (value >= 0 && value < 100) eta.coerceAtLeast(0) else 0, speed, phase))
                 }
             }
-            return folder.listFiles()?.filter { it.isFile && it.extension.lowercase() in setOf("mp4", "webm", "mkv", "m4a", "mp3", "mov", "opus") }
+            return folder.listFiles()?.filter { it.isFile && it.length() > 0 && it.extension.lowercase() in setOf("mp4", "webm", "mkv", "m4a", "mp3", "mov", "opus") }
                 ?.maxByOrNull { it.lastModified() } ?: error("Загрузчик не создал медиафайл")
         } finally { running.decrementAndGet() }
     }
@@ -98,10 +99,25 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
         withContext(Dispatchers.IO) {
             YoutubeDL.init(context)
             YoutubeDL.updateYoutubeDL(context, YoutubeDL.UpdateChannel.STABLE)
+            checkedVersion = null
             version()
         }
     }
-    override fun version() = YoutubeDL.versionName(context) ?: YoutubeDL.version(context) ?: "Встроенная версия"
+    override suspend fun checkVersion(): String {
+        begin()
+        val process = "version-${UUID.randomUUID()}"
+        try {
+            val request = YoutubeDLRequest(emptyList<String>()).apply { addOption("--version") }
+            val value = runInterruptible(Dispatchers.IO) { YoutubeDL.execute(request, process, false, null).out.trim() }
+            check(value.isNotBlank()) { "Не удалось прочитать версию загрузчика" }
+            checkedVersion = value
+            return value
+        } finally {
+            withContext(NonCancellable + Dispatchers.IO) { YoutubeDL.destroyProcessById(process) }
+            running.decrementAndGet()
+        }
+    }
+    override fun version() = checkedVersion ?: YoutubeDL.versionName(context) ?: YoutubeDL.version(context) ?: "Встроенная версия"
     private fun baseRequest(url: String) = YoutubeDLRequest(url).apply {
         addOption("--no-playlist"); addOption("--socket-timeout", "20"); addOption("--retries", "2")
     }

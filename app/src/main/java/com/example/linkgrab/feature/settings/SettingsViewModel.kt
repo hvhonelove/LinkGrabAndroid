@@ -16,11 +16,23 @@ class SettingsViewModel(private val graph: AppContainer) : ViewModel() {
     private val mutableUpdating = MutableStateFlow(false)
     val updating = mutableUpdating.asStateFlow()
     val events = MutableSharedFlow<String>(extraBufferCapacity = 8)
-    init { refreshVersion() }
+    private var checkingVersion = false
+    init { action { mutableVersion.value = withContext(Dispatchers.IO) { graph.engine.version() } } }
     fun text(key: String, value: String) = action { graph.settings.text(key, value) }
     fun flag(key: String, value: Boolean) = action { graph.settings.flag(key, value) }
     fun quality(value: Int) = action { graph.settings.quality(value) }
-    fun refreshVersion() = action { mutableVersion.value = withContext(Dispatchers.IO) { graph.engine.version() } }
+    fun refreshVersion() {
+        if (checkingVersion) return
+        checkingVersion = true
+        val previous = mutableVersion.value
+        mutableVersion.value = "Проверяем…"
+        viewModelScope.launch {
+            try { mutableVersion.value = graph.engine.checkVersion() }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { mutableVersion.value = previous; events.emit(ErrorMapper.message(e)) }
+            finally { checkingVersion = false }
+        }
+    }
     fun updateEngine() {
         if (mutableUpdating.value) return
         mutableUpdating.value = true
