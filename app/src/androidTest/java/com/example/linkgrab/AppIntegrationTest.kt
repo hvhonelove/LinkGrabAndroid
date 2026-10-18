@@ -67,9 +67,11 @@ class AppIntegrationTest {
             compose.onNodeWithTag("nav-2").performClick()
             screenshot("05-settings-light")
             compose.onNodeWithText("Тёмная").performClick()
+            compose.waitUntil(10000) { runBlocking { graph.settings.flow.first().theme == ThemeMode.DARK } }
             compose.waitForIdle()
             screenshot("06-settings-dark")
             scenario!!.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+            compose.waitUntil(10000) { context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE }
             compose.waitForIdle()
             screenshot("07-landscape")
             runBlocking {
@@ -89,6 +91,22 @@ class AppIntegrationTest {
                 graph.downloads.remove(id, true)
             }
         }
+    }
+    @Test fun roomQueueAndInterruptedRecovery() = runBlocking {
+        val dao = graph.downloads.dao
+        val first = dao.insert(com.example.linkgrab.data.db.DownloadEntity(url = "https://example.com/first", title = "First", createdAt = 1))
+        val second = dao.insert(com.example.linkgrab.data.db.DownloadEntity(url = "https://example.com/second", title = "Second", createdAt = 2))
+        assertEquals(first, dao.next()!!.id)
+        graph.downloads.moveNext(second)
+        assertEquals(second, dao.next()!!.id)
+        val claims = listOf(async(Dispatchers.IO) { dao.claim(second) }, async(Dispatchers.IO) { dao.claim(second) }).awaitAll()
+        assertEquals(1, claims.sum())
+        graph.downloads.recover()
+        assertEquals(TaskStatus.PAUSED, dao.get(second)!!.status)
+        graph.downloads.retry(second)
+        assertEquals(TaskStatus.QUEUED, dao.get(second)!!.status)
+        graph.downloads.cancel(first)
+        assertEquals(TaskStatus.CANCELED, dao.get(first)!!.status)
     }
     private fun screenshot(name: String) {
         compose.waitForIdle()

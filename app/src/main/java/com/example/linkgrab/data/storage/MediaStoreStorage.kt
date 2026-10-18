@@ -61,6 +61,11 @@ class MediaStoreStorage(context: Context) : MediaStorage {
             } ?: false
         }.getOrDefault(false)
     }
+    override suspend fun size(uri: String): Long = withContext(Dispatchers.IO) {
+        resolver.query(Uri.parse(uri), arrayOf(MediaStore.MediaColumns.SIZE), null, null, null)?.use {
+            if (it.moveToFirst()) it.getLong(0) else 0L
+        } ?: 0L
+    }
     override suspend fun delete(uri: String) { withContext(Dispatchers.IO) { resolver.delete(Uri.parse(uri), null, null) } }
     override suspend fun rename(uri: String, name: String) { withContext(Dispatchers.IO) {
         check(resolver.update(Uri.parse(uri), ContentValues().apply { put(MediaStore.MediaColumns.DISPLAY_NAME, name) }, null, null) > 0) {

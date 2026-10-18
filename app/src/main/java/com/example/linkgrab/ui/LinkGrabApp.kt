@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -63,6 +64,9 @@ fun LinkGrabApp(graph: AppContainer, home: HomeViewModel, fileAction: (DownloadE
     var suggestion by remember { mutableStateOf<String?>(null) }
     var dismissedClipboard by rememberSaveable { mutableStateOf("") }
     val snack = remember { SnackbarHostState() }
+    val routeState = rememberSaveableStateHolder()
+    val currentLink by rememberUpdatedState(link)
+    val currentDismissedClipboard by rememberUpdatedState(dismissedClipboard)
     LaunchedEffect(Unit) { merge(home.events, downloads.events, settingsVm.events).collect { snack.showSnackbar(it) } }
     LaunchedEffect(Unit) { home.sharedNavigation.collect { tab = 0; detailId = null; about = false; licenses = false } }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -74,7 +78,7 @@ fun LinkGrabApp(graph: AppContainer, home: HomeViewModel, fileAction: (DownloadE
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val candidate = runCatching { clipboard.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty() }.getOrDefault("")
                 val url = LinkParser.extract(candidate)
-                if (LinkParser.isValid(url) && url != link && url != dismissedClipboard) suggestion = url
+                if (LinkParser.isValid(url) && url != currentLink && url != currentDismissedClipboard) suggestion = url
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -98,6 +102,7 @@ fun LinkGrabApp(graph: AppContainer, home: HomeViewModel, fileAction: (DownloadE
                     Box(Modifier.fillMaxSize().padding(padding)) {
                         val route = when { licenses -> "licenses"; about -> "about"; detail != null -> "detail"; preview != null -> "preview"; else -> "tab$tab" }
                         AnimatedContent(route, label = "screen") { current ->
+                            routeState.SaveableStateProvider(current) {
                             when (current) {
                                 "licenses" -> LicenseScreen(context) { licenses = false }
                                 "about" -> AboutScreen({ about = false }, { licenses = true }, { openUrl("https://github.com/hvhonelove/LinkGrabAndroid") })
@@ -123,9 +128,10 @@ fun LinkGrabApp(graph: AppContainer, home: HomeViewModel, fileAction: (DownloadE
                                         val value = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
                                         if (value.isNotBlank()) home.setLink(LinkParser.extract(value))
                                         else scope.launch { snack.showSnackbar("Буфер обмена пуст") }
-                                    }, analyze = home::analyze, showDownloads = { tab = 1 }, details = { detailId = it },
-                                    acceptClipboard = { home.setLink(suggestion.orEmpty()); suggestion = null },
+                                    }, analyze = { keyboard?.hide(); focus.clearFocus(); home.analyze() }, showDownloads = { tab = 1 }, details = { detailId = it },
+                                    acceptClipboard = { dismissedClipboard = suggestion.orEmpty(); home.setLink(suggestion.orEmpty()); suggestion = null },
                                     dismissClipboard = { dismissedClipboard = suggestion.orEmpty(); suggestion = null })
+                            }
                             }
                         }
                     }

@@ -32,7 +32,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 Windows: use `gradlew.bat`. Open the repository in Android Studio as a Gradle project. For an x86_64 emulator use `-PtestAbi=x86_64`. ARM64 is the default to keep install size reasonable; other ABIs depend on the native wrapper distribution.
 
-For public releases, configure a private release signing key in your CI/Android Studio and keep it across releases. The downloadable CI debug APK is installable but uses a disposable debug key: an older installation signed with a different key must be removed first. Never commit a private signing key. Release minification is deliberately disabled to preserve upstream reflection and native integration.
+For public releases, configure a private release signing key and keep it across releases. The Gradle signing configuration accepts environment variables `LINKGRAB_KEYSTORE` (absolute path), `LINKGRAB_STORE_PASSWORD`, `LINKGRAB_KEY_ALIAS`, and `LINKGRAB_KEY_PASSWORD`; with all four set, `assembleRelease` signs the APK. Without them it builds an unsigned release. The downloadable CI debug APK is installable but uses a disposable debug key: an older installation signed with a different key must be removed first. Never commit a private signing key. Release minification is deliberately disabled to preserve upstream reflection and native integration.
 
 ## Structure
 

@@ -26,8 +26,20 @@ android {
         jniLibs.useLegacyPackaging = true
         resources.excludes += setOf("META-INF/AL2.0", "META-INF/LGPL2.1")
     }
+    signingConfigs {
+        create("publicRelease") {
+            val path = providers.environmentVariable("LINKGRAB_KEYSTORE").orNull
+            if (!path.isNullOrBlank()) {
+                storeFile = file(path)
+                storePassword = providers.environmentVariable("LINKGRAB_STORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("LINKGRAB_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("LINKGRAB_KEY_PASSWORD").get()
+            }
+        }
+    }
     buildTypes {
         release {
+            if (providers.environmentVariable("LINKGRAB_KEYSTORE").isPresent) signingConfig = signingConfigs.getByName("publicRelease")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

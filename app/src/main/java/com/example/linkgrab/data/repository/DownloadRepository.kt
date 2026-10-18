@@ -59,7 +59,7 @@ class DownloadRepository(private val context: Context, private val database: Lin
     /** A committed MediaStore row wins over an interrupted database completion. */
     suspend fun recover() {
         dao.running().forEach { item ->
-            if (item.uri != null && storage.isPublished(item.uri)) dao.complete(item.id, item.bytes, System.currentTimeMillis())
+            if (item.uri != null && storage.isPublished(item.uri)) dao.complete(item.id, storage.size(item.uri), System.currentTimeMillis())
             else {
                 item.uri?.let { runCatching { storage.delete(it) } }
                 dao.update(item.copy(status = TaskStatus.PAUSED, uri = null,

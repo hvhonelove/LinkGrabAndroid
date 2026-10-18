@@ -19,5 +19,5 @@ data class VideoMetadata(val url: String, val title: String, val thumbnail: Stri
         return if (video.bytes == 0L) 0 else video.bytes + if (video.audio) 0 else audio
     }
 }
-data class EngineProgress(val percent: Float, val eta: Long, val speed: String)
+data class EngineProgress(val percent: Float, val eta: Long, val speed: String, val phase: String = "Скачивание")
 const val LEGAL_NOTICE = "Download only content you own or have permission to save. Some services may restrict downloading. DRM-protected, private, or login-restricted content may not work."

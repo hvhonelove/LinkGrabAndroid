@@ -31,6 +31,8 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
             }
             val raw = runInterruptible(Dispatchers.IO) { YoutubeDL.execute(request, process, false, null).out }
             val json = JSONObject(raw)
+            require(!json.has("entries")) { "Это плейлист или подборка. Выбери ссылку на одно видео." }
+            require(!json.optBoolean("has_drm")) { "Видео защищено DRM." }
             require(!json.optBoolean("is_live")) { "Прямые эфиры не поддерживаются. Дождись окончания трансляции." }
             val array = json.optJSONArray("formats")
             val formats = (0 until (array?.length() ?: 0)).map { array!!.getJSONObject(it) }
@@ -62,7 +64,7 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
                 } else {
                     val limit = if (options.quality > 0) "[height<=${options.quality}]" else ""
                     addOption("-f", "bv*$limit+ba/b$limit")
-                    addOption("-S", "ext:mp4:m4a")
+                    addOption("-S", "res,ext:mp4:m4a")
                     when (options.format) {
                         ContainerFormat.MP4 -> { addOption("--merge-output-format", "mp4"); addOption("--remux-video", "mp4") }
                         ContainerFormat.WEBM -> { addOption("--merge-output-format", "webm"); addOption("--remux-video", "webm") }
@@ -70,10 +72,20 @@ class YtDlpEngine(private val context: Context) : VideoEngine {
                     }
                 }
             }
+            var phase = "Подготовка"
             runInterruptible(Dispatchers.IO) {
                 YoutubeDL.execute(request, "task-$id", false) { percent, eta, line ->
+                    phase = when {
+                        line.contains("[Merger]") -> "Объединение дорожек"
+                        line.contains("[ExtractAudio]") -> "Преобразование аудио"
+                        line.contains("[VideoRemuxer]") -> "Смена контейнера"
+                        line.startsWith("[download]") -> "Скачивание"
+                        else -> phase
+                    }
                     val speed = Regex("at\\s+([^\\s]+/s)").find(line)?.groupValues?.get(1).orEmpty()
-                    progress(EngineProgress(percent.coerceIn(0f, 100f), eta, speed))
+                    val parsed = Regex("\\[download]\\s+(\\d+(?:\\.\\d+)?)%").find(line)?.groupValues?.get(1)?.toFloatOrNull()
+                    val value = if (phase == "Скачивание") parsed ?: percent else -1f
+                    progress(EngineProgress(value.coerceIn(-1f, 100f), if (value >= 0 && value < 100) eta.coerceAtLeast(0) else 0, speed, phase))
                 }
             }
             return folder.listFiles()?.filter { it.isFile && it.extension.lowercase() in setOf("mp4", "webm", "mkv", "m4a", "mp3", "mov", "opus") }

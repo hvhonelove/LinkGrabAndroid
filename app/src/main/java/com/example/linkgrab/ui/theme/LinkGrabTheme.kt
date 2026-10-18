@@ -1,11 +1,10 @@
 package com.example.linkgrab.ui.theme
 
-import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -26,7 +25,7 @@ private val Dark = darkColorScheme(primary = Color(0xFFB79AFF), onPrimary = Colo
 @Composable
 fun LinkGrabTheme(mode: ThemeMode, content: @Composable () -> Unit) {
     val dark = mode == ThemeMode.DARK || mode == ThemeMode.SYSTEM && isSystemInDarkTheme()
-    val activity = LocalContext.current as? Activity
+    val activity = LocalActivity.current
     SideEffect { activity?.window?.let {
         WindowCompat.getInsetsController(it, it.decorView).apply {
             isAppearanceLightStatusBars = !dark; isAppearanceLightNavigationBars = !dark

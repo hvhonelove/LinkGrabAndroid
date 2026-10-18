@@ -15,7 +15,7 @@ class QueueProcessor(private val graph: AppContainer, private val notifications:
         val progressUpdates = Channel<com.example.linkgrab.domain.EngineProgress>(Channel.CONFLATED)
         val collector = launch {
             for (p in progressUpdates) {
-                repo.dao.progress(item.id, p.percent, p.speed, p.eta, "Скачивание")
+                repo.dao.progress(item.id, p.percent, p.speed, p.eta, p.phase)
                 notifications.progress(item.title, p.percent.toInt(), item.id)
                 delay(450)
             }
@@ -40,7 +40,7 @@ class QueueProcessor(private val graph: AppContainer, private val notifications:
                 created = { uri, name, mime -> repo.dao.publishing(item.id, uri, name, mime) },
                 stillRunning = { repo.dao.get(item.id)?.status == TaskStatus.RUNNING })
             repo.dao.complete(item.id, media.bytes, System.currentTimeMillis())
-            if (settings.notifications) notifications.finished(item.title, media.uri, media.mime, item.id)
+            if (graph.settings.flow.first().notifications) notifications.finished(item.title, media.uri, media.mime, item.id)
         } catch (error: CancellationException) {
             withContext(NonCancellable) {
                 val current = repo.dao.get(item.id)

@@ -78,14 +78,16 @@ fun DownloadCard(item: DownloadEntity, openDetails: () -> Unit, actions: (@Compo
             Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (item.status == TaskStatus.RUNNING) {
-            LinearProgressIndicator(progress = { item.progress / 100f }, modifier = Modifier.fillMaxWidth())
+            if (item.progress < 0) LinearProgressIndicator(Modifier.fillMaxWidth())
+            else LinearProgressIndicator(progress = { item.progress / 100f }, modifier = Modifier.fillMaxWidth())
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${item.progress.toInt()}% · ${item.speed.ifBlank { "Обработка" }}", style = MaterialTheme.typography.bodySmall)
+                Text(if (item.progress < 0) item.phase else "${item.progress.toInt()}% · ${item.speed.ifBlank { "Обработка" }}", style = MaterialTheme.typography.bodySmall)
                 if (item.eta > 0) Text("≈ ${item.eta} с", style = MaterialTheme.typography.bodySmall)
             }
         } else Text(if (item.status == TaskStatus.COMPLETED) "${bytesLabel(item.bytes)} · ${DateFormat.getDateInstance(DateFormat.SHORT).format(Date(item.createdAt))}"
             else item.error ?: item.phase, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 3, overflow = TextOverflow.Ellipsis)
+        if (item.status == TaskStatus.RUNNING && item.bytes > 0) Text("≈ ${bytesLabel(item.bytes)}", style = MaterialTheme.typography.bodySmall)
         if (actions != null) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, content = actions)
     }
 }
