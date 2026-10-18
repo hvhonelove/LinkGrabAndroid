@@ -10,5 +10,5 @@ interface MediaStorage {
     suspend fun isPublished(uri: String): Boolean
     suspend fun size(uri: String): Long
     suspend fun delete(uri: String)
-    suspend fun rename(uri: String, name: String)
+    suspend fun rename(uri: String, name: String): String
 }

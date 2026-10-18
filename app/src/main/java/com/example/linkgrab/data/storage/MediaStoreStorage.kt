@@ -48,7 +48,7 @@ class MediaStoreStorage(context: Context) : MediaStorage {
             }
             if (!stillRunning()) throw CancellationException("Операция остановлена")
             check(resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null) > 0)
-            PublishedMedia(uri.toString(), name, mime, file.length())
+            PublishedMedia(uri.toString(), displayName(uri, name), mime, file.length())
         } catch (error: Throwable) {
             runCatching { resolver.delete(uri, null, null) }
             throw error
@@ -67,9 +67,14 @@ class MediaStoreStorage(context: Context) : MediaStorage {
         } ?: 0L
     }
     override suspend fun delete(uri: String) { withContext(Dispatchers.IO) { resolver.delete(Uri.parse(uri), null, null) } }
-    override suspend fun rename(uri: String, name: String) { withContext(Dispatchers.IO) {
+    override suspend fun rename(uri: String, name: String): String = withContext(Dispatchers.IO) {
         check(resolver.update(Uri.parse(uri), ContentValues().apply { put(MediaStore.MediaColumns.DISPLAY_NAME, name) }, null, null) > 0) {
             "Файл удалён или недоступен"
         }
-    } }
+        displayName(Uri.parse(uri), name)
+    }
+    private fun displayName(uri: Uri, fallback: String): String =
+        resolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)?.use {
+            if (it.moveToFirst()) it.getString(0) else fallback
+        } ?: fallback
 }

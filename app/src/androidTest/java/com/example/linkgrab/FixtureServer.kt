@@ -4,7 +4,7 @@ import java.net.ServerSocket
 import java.util.concurrent.Executors
 
 /** Local HTTP media source for the real yt-dlp executable, no external service. */
-class FixtureServer(private val bytes: ByteArray) : AutoCloseable {
+class FixtureServer(private val bytes: ByteArray, private val throttleMs: Long = 0) : AutoCloseable {
     private val socket = ServerSocket(0)
     private val pool = Executors.newCachedThreadPool()
     val url = "http://127.0.0.1:${socket.localPort}/fixture.mp4"
@@ -30,7 +30,17 @@ class FixtureServer(private val bytes: ByteArray) : AutoCloseable {
                             if (start > 0) append("Content-Range: bytes $start-${bytes.lastIndex}/${bytes.size}\r\n")
                             append("Connection: close\r\n\r\n")
                         }
-                        it.getOutputStream().use { out -> out.write(header.toByteArray()); if (!request.startsWith("HEAD")) out.write(bytes, start, count) }
+                        it.getOutputStream().use { out ->
+                            out.write(header.toByteArray())
+                            if (!request.startsWith("HEAD")) {
+                                var offset = start
+                                while (offset < bytes.size) {
+                                    val length = minOf(512, bytes.size - offset)
+                                    out.write(bytes, offset, length); out.flush(); offset += length
+                                    if (throttleMs > 0) Thread.sleep(throttleMs)
+                                }
+                            }
+                        }
                     }
                 }
             }

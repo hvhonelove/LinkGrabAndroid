@@ -46,8 +46,8 @@ class DownloadRepository(private val context: Context, private val database: Lin
         check(item.status == TaskStatus.COMPLETED && item.uri != null) { "Сначала дождись завершения загрузки" }
         val safe = safeFileName(title)
         val name = "$safe.${item.fileName.substringAfterLast('.', "mp4")}"
-        storage.rename(item.uri, name)
-        dao.update(item.copy(title = safe, fileName = name))
+        val actualName = storage.rename(item.uri, name)
+        dao.update(item.copy(title = safe, fileName = actualName))
     }
     suspend fun remove(id: Long, deleteFile: Boolean) {
         val item = dao.get(id) ?: return

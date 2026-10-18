@@ -45,7 +45,7 @@ import kotlinx.coroutines.flow.merge
 
 @Composable
 fun LinkGrabApp(graph: AppContainer, home: HomeViewModel, fileAction: (DownloadEntity, FileAction) -> Unit,
-    notifications: () -> Unit, openUrl: (String) -> Unit) {
+    notifications: (Boolean) -> Unit, openUrl: (String) -> Unit) {
     val downloads: DownloadsViewModel = viewModel(factory = viewModelFactory { initializer { DownloadsViewModel(graph) } })
     val settingsVm: SettingsViewModel = viewModel(factory = viewModelFactory { initializer { SettingsViewModel(graph) } })
     val settings by settingsVm.settings.collectAsStateWithLifecycle()
@@ -116,14 +116,14 @@ fun LinkGrabApp(graph: AppContainer, home: HomeViewModel, fileAction: (DownloadE
                                     home::closePreview) { options ->
                                     if (preferences.notifications && !preferences.notificationAsked) {
                                         settingsVm.flag("notificationAsked", true)
-                                        if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notifications()
+                                        if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notifications(false)
                                     }
                                     home.enqueue(context, options) { tab = 1 }
                                 }
                                 "tab1" -> DownloadsScreen(entries, { detailId = it }, { downloads.retry(context, it) }, downloads::pause,
                                     downloads::cancel, downloads::next, { downloads.startQueue(context) }, { tab = 0 }, fileAction)
                                 "tab2" -> SettingsScreen(preferences, version, updating, settingsVm::text, settingsVm::flag, settingsVm::quality,
-                                    settingsVm::updateEngine, settingsVm::refreshVersion, notifications, { about = true })
+                                    settingsVm::updateEngine, settingsVm::refreshVersion, { notifications(true) }, { about = true })
                                 else -> HomeScreen(link, analysis, entries, suggestion, home::setLink,
                                     paste = {
                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

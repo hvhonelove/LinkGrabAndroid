@@ -71,7 +71,7 @@ Saving creates a pending MediaStore row, records its URI in Room, copies the fin
 
 ## CI and testing
 
-GitHub Actions builds debug and unsigned release APKs, runs JVM tests and lint, then runs an Android 36 x86_64 emulator. Integration tests use a tiny bundled test-only MP4 served by a local socket and execute the **real** bundled yt-dlp and FFmpeg. They cover onboarding, analysis, queue-to-MediaStore video publication, byte integrity, Compose navigation, filename changes, deletion, audio extraction, both themes and rotation. The production app contains no test server or fake media records. Screenshots and JUnit reports are uploaded as artifacts.
+GitHub Actions builds debug and unsigned release APKs, runs JVM tests and lint, then runs an Android 36 x86_64 emulator. Integration tests use a tiny bundled test-only MP4 served by a local socket and execute the **real** bundled yt-dlp and FFmpeg. They cover onboarding, analysis, queue-to-MediaStore video publication, byte integrity, native pause/resume against a throttled local source, queue ordering/claim/recovery, Compose navigation, filename changes, deletion, audio extraction, both themes and rotation. The production app contains no test server or fake media records. Screenshots and JUnit reports are uploaded as artifacts.
 
 ```sh
 ./gradlew -PtestAbi=x86_64 :app:connectedDebugAndroidTest

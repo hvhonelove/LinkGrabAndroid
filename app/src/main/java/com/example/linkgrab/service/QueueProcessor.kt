@@ -39,6 +39,7 @@ class QueueProcessor(private val graph: AppContainer, private val notifications:
             val media = graph.storage.publish(item, file,
                 created = { uri, name, mime -> repo.dao.publishing(item.id, uri, name, mime) },
                 stillRunning = { repo.dao.get(item.id)?.status == TaskStatus.RUNNING })
+            repo.dao.publishing(item.id, media.uri, media.name, media.mime)
             repo.dao.complete(item.id, media.bytes, System.currentTimeMillis())
             if (graph.settings.flow.first().notifications) notifications.finished(item.title, media.uri, media.mime, item.id)
         } catch (error: CancellationException) {

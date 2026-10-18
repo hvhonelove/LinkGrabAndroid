@@ -92,6 +92,27 @@ class AppIntegrationTest {
             }
         }
     }
+    @Test fun pauseAndResumeRealNativeDownload() = runBlocking {
+        val bytes = InstrumentationRegistry.getInstrumentation().context.assets.open("fixture.mp4").use { it.readBytes() }
+        FixtureServer(bytes, 70).use { server ->
+            val info = graph.engine.analyze(server.url)
+            val id = graph.downloads.enqueue(info, DownloadOptions())
+            val processor = com.example.linkgrab.service.QueueProcessor(graph, com.example.linkgrab.service.DownloadNotifications(context))
+            val task = async(Dispatchers.Default) { processor.runOne(graph.downloads.dao.get(id)!!) }
+            withTimeout(30000) {
+                while (graph.downloads.workFolder(id).listFiles()?.none { it.name.endsWith(".part") && it.length() > 0 } != false) delay(50)
+            }
+            graph.downloads.pause(id)
+            task.await()
+            assertEquals(TaskStatus.PAUSED, graph.downloads.dao.get(id)!!.status)
+            graph.downloads.retry(id)
+            processor.runOne(graph.downloads.dao.get(id)!!)
+            val complete = graph.downloads.dao.get(id)!!
+            assertEquals(complete.error, TaskStatus.COMPLETED, complete.status)
+            assertArrayEquals(bytes, context.contentResolver.openInputStream(Uri.parse(complete.uri))!!.use { it.readBytes() })
+            graph.downloads.remove(id, true)
+        }
+    }
     @Test fun roomQueueAndInterruptedRecovery() = runBlocking {
         val dao = graph.downloads.dao
         val first = dao.insert(com.example.linkgrab.data.db.DownloadEntity(url = "https://example.com/first", title = "First", createdAt = 1))

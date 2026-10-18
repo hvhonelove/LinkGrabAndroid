@@ -45,8 +45,8 @@ class MainActivity : ComponentActivity() {
     private fun receive(intent: Intent?) {
         if (intent?.action == Intent.ACTION_SEND) intent.getStringExtra(Intent.EXTRA_TEXT)?.let(home::receiveShare)
     }
-    private fun notifications() {
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+    private fun notifications(openSettings: Boolean) {
+        if (!openSettings && Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notificationRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else runCatching { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }
     }
