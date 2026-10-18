@@ -63,6 +63,8 @@ jobs:
           script: |
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell settings put global hide_error_dialogs 1
+            adb shell am force-stop com.android.launcher3
             adb shell am instrument -w com.example.linkgrab.test/com.example.linkgrab.UiSmokeInstrumentation | tee ui-smoke.log
             adb logcat -d -v brief AndroidRuntime:E '*:S' | tee crash.log
             adb pull /sdcard/Android/data/com.example.linkgrab/files/screenshots screenshots || true
