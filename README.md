@@ -1,95 +1,137 @@
-# LinkGrab 2
+<div align="center">
 
-A free, local-first Android video/audio downloader with a violet Compose interface. No account, ads, paywall, analytics, or custom backend. Android 10+, ARM64 by default. Light, dark, and system themes. Application source is licensed **GPL-3.0-only**.
+<img src="assets/linkgrab-banner.svg" alt="LinkGrab — видеозагрузчик для Android" width="100%" />
 
-> Download only content you own or have permission to save. Some services may restrict downloading. DRM-protected, private, or login-restricted content may not work.
+**Видео и музыка по ссылке. Бесплатно. Красиво. На твоём телефоне.**
 
-## Features
+[![Android 10+](https://img.shields.io/badge/Android-10%2B-865AF0?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-Compose-865AF0?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![GPL 3.0](https://img.shields.io/badge/License-GPL--3.0-5B526B?style=for-the-badge)](LICENSE)
+[![CI](https://github.com/hvhonelove/LinkGrabAndroid/actions/workflows/android-apk.yml/badge.svg)](https://github.com/hvhonelove/LinkGrabAndroid/actions/workflows/android-apk.yml)
 
-- First-launch onboarding and native splash screen.
-- Paste a link, receive Android Share text, or opt in to a clipboard suggestion on resume.
-- TikTok (`www.tiktok.com/@user/video/id`, `vm.tiktok.com`, `vt.tiktok.com`) and VK Видео (`vk.com/video...`, `vkvideo.ru/video...`) are recognized. Public TikTok share URLs are cleaned of tracking parameters; VK access query parameters are preserved. The downloader prioritizes TikTok streams not marked as watermarked, when exposed by yt-dlp.
-- Analyze links with the actual bundled yt-dlp executable: title, source, uploader, thumbnail, duration, available standard resolutions and size estimates when supplied by the source.
-- Video: best, 1080p, 720p, 480p when listed by the source; automatic MP4-preferred container or explicit MP4/WebM. Audio: M4A/MP3 through FFmpeg.
-- Persistent sequential queue with foreground progress, speed, ETA, pause, resume, cancellation, retry and move-next priority.
-- Room history: active/complete/failed-and-canceled filters, search, details, rename, share, open, location, redownload and confirmed file/history deletion.
-- MediaStore destinations: `Movies/LinkGrab` and `Music/LinkGrab`. No broad storage/gallery permission.
-- DataStore preferences: appearance, default resolution/type/audio format, clipboard suggestions, completion notifications, automatic first-use/daily engine update (enabled by default, user can opt out).
-- On first link analysis LinkGrab attempts an upstream yt-dlp update (only when the default-enabled auto-update preference is on). Successful checks are cached for 24h, failed checks for 1h; the bundled engine remains usable offline. Extractor-specific failures can trigger one automatic refresh-and-retry if the cooldown permits. Manual updates and version inspection remain available.
-- Recovery of interrupted jobs, pending MediaStore rollback, and migration of LinkGrab 1.1 history.
+### [📥 Скачать APK](https://github.com/hvhonelove/LinkGrabAndroid/releases) · [💻 Исходники](https://github.com/hvhonelove/LinkGrabAndroid) · [🐛 Сообщить об ошибке](https://github.com/hvhonelove/LinkGrabAndroid/issues/new/choose)
 
-## Build
+🇷🇺 Русский · [English](#english)
 
-Requirements: JDK 17; Android SDK platform 36 and build tools 35.0.0. The Gradle wrapper pins **8.11.1**, AGP **8.10.1**, Kotlin/Compose compiler **2.1.20**, Compose BOM **2025.05.01**, Room **2.7.1**, and youtubedl-android **0.18.1**. These are a pinned compatible baseline rather than floating latest dependencies.
+</div>
 
-```sh
-# Set ANDROID_HOME or configure sdk.dir in local.properties.
+---
+
+## ✨ Что такое LinkGrab?
+
+**LinkGrab** — бесплатный видеозагрузчик для Android с аккуратным интерфейсом в iPhone-style. Вставь ссылку или воспользуйся меню «Поделиться», посмотри доступные форматы, выбери качество и сохрани видео или аудио на телефон.
+
+**Без рекламы, подписок, обязательной регистрации и собственного сервера.** Работа с медиа происходит локально через [yt-dlp](https://github.com/yt-dlp/yt-dlp) и [FFmpeg](https://ffmpeg.org/). Сеть нужна для связи с видеосайтом.
+
+| 🎬 Видео | 🎧 Аудио | 💜 Комфорт |
+| :--- | :--- | :--- |
+| Выбор доступного качества | M4A и MP3 | Превью с обложкой и названием |
+| MP4 / WebM | Сохранение музыки | Фоновая очередь и уведомления |
+| TikTok, VK, X, YouTube | Работа без своего сервера | История, поиск, светлая/тёмная тема |
+
+## 🌐 Источники
+
+| Платформа | Поддержка |
+| --- | --- |
+| **YouTube** | Обычные видео и Shorts, если доступны через yt-dlp |
+| **X / Twitter** | Видео из публичных публикаций |
+| **TikTok** | Длинные и короткие ссылки. Приоритет потокам без водяного знака, если они доступны |
+| **VK Видео** | Ссылки vk.com и vkvideo.ru |
+| **Другие** | Сайты, распознаваемые текущим экстрактором yt-dlp |
+
+> Совместимость зависит от платформы и актуальности движка. LinkGrab не удаляет водяные знаки, встроенные в видеокадры, не обходит DRM и не обещает скачивание закрытых материалов.
+
+## 📲 Установка за минуту
+
+1. Открой [**Releases — скачать LinkGrab**](https://github.com/hvhonelove/LinkGrabAndroid/releases).
+2. Выбери последний релиз и скачай файл **LinkGrab-*.apk** из раздела **Assets**.
+3. Открой APK через **Мои файлы → Загрузки** и разреши установку из этого источника, если Android попросит.
+4. Вставь ссылку в LinkGrab, посмотри предпросмотр, выбери качество и нажми **«Скачать»**.
+
+**Требования:** Android 10+, ARM64. Основная сборка проверяется в GitHub Actions и на Android-эмуляторе; пользовательская работа подтверждена на Samsung.
+
+**Важно про обновления:** текущий публичный *preview APK* подписан временным debug-ключом GitHub Actions. Из-за разных подписей для следующих сборок может понадобиться переустановка. Удаление приложения стирает его историю и настройки; видео в общих папках устройства обычно сохраняются. Для устойчивых обновлений нужен отдельный долговременный релизный ключ.
+
+## ⚡ Что внутри
+
+- **Анализ ссылки:** название, обложка, автор, длительность и доступные форматы.
+- **Скачивание:** выбранное качество, видео или аудио, повтор при сбоях, пауза и продолжение, где поддерживается.
+- **Фоновая работа:** уведомления, прогресс, очередь загрузок.
+- **Медиатека:** поиск, просмотр, повтор, переименование, отправка и удаление.
+- **Темы:** светлая, тёмная и системная, с фиолетовыми акцентами.
+- **Автообновление yt-dlp:** проверка на первом использовании и при некоторых ошибках без лишних повторных запросов; работа с встроенной версией, если обновление недоступно.
+- **Файлы:** видео — `Movies/LinkGrab`, аудио — `Music/LinkGrab`.
+
+## 🔐 Бесплатно и приватно
+
+LinkGrab не требует аккаунта, не содержит рекламы, платных функций, собственной аналитики или собственного сервера. История и настройки хранятся на устройстве. Приложение обращается к выбранным видеосайтам и их CDN за медиа, к хостингам миниатюр за изображениями и к GitHub за обновлениями.
+
+Смотри [политику конфиденциальности](PRIVACY.md) и [уведомления о сторонних компонентах](THIRD_PARTY_NOTICES.md).
+
+## 🛠️ Собрать самостоятельно
+
+**Kotlin · Jetpack Compose · MVVM · Room · DataStore · Foreground Service · yt-dlp · FFmpeg**
+
+Нужны JDK 17, Android SDK Platform 36 и Build Tools 35.0.0. Используется Gradle Wrapper 8.11.1.
+
+```bash
+git clone https://github.com/hvhonelove/LinkGrabAndroid.git
+cd LinkGrabAndroid
+
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
-# Install on an ARM64 phone with USB debugging:
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-# Compile an unsigned release:
-./gradlew :app:assembleRelease
+# Windows: gradlew.bat :app:assembleDebug
+# APK: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Windows: use `gradlew.bat`. Open the repository in Android Studio as a Gradle project. For an x86_64 emulator use `-PtestAbi=x86_64`. ARM64 is the default to keep install size reasonable; other ABIs depend on the native wrapper distribution.
+Для x86_64-эмулятора передай `-PtestAbi=x86_64`; для большинства современных Android-телефонов стандартная сборка ARM64.
 
-For public releases, configure a private release signing key and keep it across releases. The Gradle signing configuration accepts environment variables `LINKGRAB_KEYSTORE` (absolute path), `LINKGRAB_STORE_PASSWORD`, `LINKGRAB_KEY_ALIAS`, and `LINKGRAB_KEY_PASSWORD`; with all four set, `assembleRelease` signs the APK. Without them it builds an unsigned release. The downloadable CI debug APK is installable but uses a disposable debug key: an older installation signed with a different key must be removed first. Never commit a private signing key. Release minification is deliberately disabled to preserve upstream reflection and native integration.
+Документация: [Архитектура](ARCHITECTURE.md) · [История изменений](CHANGELOG.md) · [Разработка и вклад](CONTRIBUTING.md) · [Безопасность](SECURITY.md).
 
-## Structure
+GitHub Actions выполняет unit-тесты, lint и инструментальные тесты на эмуляторе с настоящими yt-dlp, FFmpeg и MediaStore.
 
-```text
-app/src/main/java/com/example/linkgrab/
-  LinkGrabApplication.kt          # manual dependency injection / startup recovery
-  MainActivity.kt                 # share intents, permissions and external file actions
-  core/                          # URL parsing, display/file helpers, error mapping
-  domain/                        # models and engine/storage/download-manager interfaces
-  data/
-    db/                          # Room entity, DAO, converters, schema
-    engine/                      # real yt-dlp/FFmpeg integration
-    repository/                  # persistent queue commands, legacy import, recovery
-    settings/                    # Preferences DataStore
-    storage/                     # transactional MediaStore publication
-  service/                       # foreground lifecycle, queue processor, notifications
-  feature/
-    home/                        # analysis ViewModel, home, onboarding
-    preview/                     # metadata preview + options sheet
-    downloads/                   # downloads ViewModel, list, file details and actions
-    settings/                    # settings ViewModel, settings/about screens
-  ui/                            # root routing, reusable controls, light/dark theme
-app/src/test/                    # pure Kotlin URL/options/filename/error tests
-app/src/androidTest/             # Compose + real native engine/MediaStore integration
-app/schemas/                     # Room schema exported by builds
-scripts/emulator-tests.sh        # emulator test execution and screenshot collection
-```
+## ❓ Частые вопросы
 
-The project has one Gradle application module with separated packages to keep configuration and build costs modest. UI observes ViewModel `StateFlow`; repositories own persistence, the foreground service owns work, and the engine/storage implementations run blocking I/O away from the main thread. Navigation/tab/detail state and the input URL survive configuration changes; metadata is fetched again after process death.
+<details><summary><b>Почему не скачивается видео?</b></summary>
 
-## Queue and recovery contract
+Сайт может изменить способ выдачи видео, ограничить доступ к CDN или потребовать входа. LinkGrab умеет автоматически проверять обновления yt-dlp и повторять часть ошибок. Открой детали неудачной загрузки, чтобы увидеть техническую причину.
 
-Room is authoritative. A single service drains queued jobs in priority/FIFO order. Pause stops the native process and keeps deterministic private work files. Resume re-extracts the original URL and asks yt-dlp to continue partial files. Cancel removes private work files. Failures retain temporary files for retry. The UI never invents a completed job or successful pause.
+</details>
 
-Saving creates a pending MediaStore row, records its URI in Room, copies the finished file, publishes it, then commits completion. On next process startup, an already-published row is recovered as complete; incomplete publication is rolled back and the job becomes paused. Queued tasks remain in Room. Interrupted work is **not automatically started from the background or after boot**; open the app and resume/start the queue. Android force-stop prevents execution until a user opens the app again.
+<details><summary><b>TikTok сохраняется без водяного знака?</b></summary>
 
-## CI and testing
+Если платформа отдаёт чистый видеопоток, LinkGrab отдаёт ему приоритет. Когда логотип уже находится в кадрах, убрать его автоматически нельзя. Результат зависит от конкретного видео и версии yt-dlp.
 
-GitHub Actions builds debug and unsigned release APKs, runs JVM tests and lint, then runs an Android 36 x86_64 emulator. Integration tests use a tiny bundled test-only MP4 served by a local socket and execute the **real** bundled yt-dlp and FFmpeg. They cover onboarding, analysis, queue-to-MediaStore video publication, byte integrity, native pause/resume against a throttled local source, queue ordering/claim/recovery, Compose navigation, filename changes, deletion, audio extraction, both themes and rotation. The production app contains no test server or fake media records. Screenshots and JUnit reports are uploaded as artifacts.
+</details>
 
-```sh
-./gradlew -PtestAbi=x86_64 :app:connectedDebugAndroidTest
-```
+<details><summary><b>Куда сохраняются файлы?</b></summary>
 
-CI artifacts: `LinkGrab-2-android-arm64-apk`, `LinkGrab-build-reports`, `LinkGrab-2-native-test-results`.
+Видео: `Movies/LinkGrab`. Аудио: `Music/LinkGrab`. Ищи их через галерею или «Мои файлы».
 
-## Honest limitations
+</details>
 
-- Watermark-free TikTok is best-effort: LinkGrab cannot remove watermarks already embedded in video frames. If no suitable clean stream is available, the download may fail rather than select a known watermarked stream.
-- Site support and metadata completeness are controlled by yt-dlp and the source. No cookies/login, CAPTCHA, DRM bypass, live-stream capture, playlist downloading, or guarantee that any particular site is available.
-- Pausing is stop-and-resume of partial files, not a suspended TCP session. Some sources require restarting from zero. FFmpeg postprocessing can be indeterminate; displayed speed/ETA may be absent or apply to one stream of a video/audio merge.
-- Automatic mode prefers MP4 but can produce WebM or MKV. Explicit remuxing cannot make an incompatible codec compatible. Audio conversion may take additional time; estimated sizes are not guarantees.
-- Queue concurrency is one. Recovery requires opening the app; no boot receiver or hidden background auto-start. Android 15+ foreground `dataSync` time limits still apply; timeout saves the interrupted task as paused. Samsung/OEM battery policies and available disk space also apply.
-- Completion-notification preference cannot remove Android's required active foreground-service notification. Denying notification permission does not turn a background download into an invisible operation.
-- Folder opening is delegated to the device's file manager; unsupported file managers get a readable destination path. Files deleted externally remain in history until removed; opening one explains that it is unavailable.
-- Network engine updates are initiated in-app, use the upstream stable channel, and do not create a persistent updater task.
-- CI validates the bundled native runtime on the emulator's page size/ABI. Additional ARM64 hardware, 16 KB page-size and store-distribution validation is required before claiming compatibility with every device.
+<details><summary><b>Почему APK не ставится поверх старой версии?</b></summary>
 
-See [ARCHITECTURE.md](ARCHITECTURE.md), [CHANGELOG.md](CHANGELOG.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Предварительные CI-сборки подписываются различными debug-ключами. Для обновления без потери локальной базы будет нужен стабильный релизный сертификат.
+
+</details>
+
+## 🤝 Открытый исходный код
+
+LinkGrab распространяется по лицензии **[GNU GPL-3.0-only](LICENSE)**. Код можно изучать, изменять и распространять, соблюдая условия GPL и лицензии зависимостей.
+
+Нашёл баг или хочешь предложить функцию? [Создай Issue](https://github.com/hvhonelove/LinkGrabAndroid/issues/new/choose). Не публикуй приватные ссылки, cookies и токены.
+
+## English
+
+**LinkGrab** is a free, open-source Android 10+ video and audio downloader with a polished violet Compose UI. Paste or share a URL, preview the video, select a format and save it to your phone. No ads, subscriptions, accounts, analytics or LinkGrab backend.
+
+Works with public URLs supported by yt-dlp, including YouTube, X, TikTok and VK Video. Watermark-free TikTok streams are preferred where available. DRM, login-gated and inaccessible content may not work.
+
+[Download the APK](https://github.com/hvhonelove/LinkGrabAndroid/releases) · [Source code](https://github.com/hvhonelove/LinkGrabAndroid) · [Report an issue](https://github.com/hvhonelove/LinkGrabAndroid/issues/new/choose)
+
+---
+
+<div align="center">
+  <b>LinkGrab — сохраняй то, что нравится.</b><br/>
+  Free · Open source · Made for Android
+</div>

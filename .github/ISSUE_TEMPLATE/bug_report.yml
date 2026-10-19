@@ -1,0 +1,55 @@
+name: "🐛 Ошибка / Bug"
+description: "Сообщить о проблеме в LinkGrab"
+title: "[Bug] "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Версия LinkGrab
+      placeholder: "2.0.3"
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Устройство и Android
+      placeholder: "Samsung Galaxy S25 Ultra, Android 16"
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Сайт
+      options:
+        - YouTube
+        - X / Twitter
+        - TikTok
+        - VK Видео
+        - Другой
+        - Не связано со скачиванием
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как воспроизвести ошибку?
+      description: "Не публикуй cookies, токены или приватные URL."
+      placeholder: |
+        1. Открыть...
+        2. Вставить ссылку...
+        3. Нажать...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что ожидалось и что произошло?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Техническая ошибка
+      description: "Удали из логов секреты и приватные данные."
+    validations:
+      required: false

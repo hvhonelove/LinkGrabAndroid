@@ -1,0 +1,17 @@
+name: "✨ Предложение / Feature"
+description: "Предложить улучшение LinkGrab"
+title: "[Feature] "
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Что изменить?
+      description: "Опиши проблему пользователя и желаемое решение."
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Чем это будет полезно?
+    validations:
+      required: true

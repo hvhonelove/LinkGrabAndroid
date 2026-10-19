@@ -1,68 +1,121 @@
-name: Publish verified LinkGrab 2.0 preview
+name: Publish LinkGrab preview
+
 on:
+  workflow_run:
+    workflows: ["Build and verify LinkGrab"]
+    types: [completed]
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: [.github/workflows/publish-preview.yml]
+    inputs:
+      run_id:
+        description: "Successful Build and verify LinkGrab run ID (optional)"
+        required: false
+        type: string
+
 permissions:
   contents: write
   actions: read
+
 concurrency:
-  group: publish-linkgrab-2-preview
+  group: publish-linkgrab-preview
   cancel-in-progress: false
+
 jobs:
   publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
-      - name: Download the verified ARM64 APK
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Find verified APK for current main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+          MANUAL_RUN_ID: ${{ inputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID="${MANUAL_RUN_ID:-${TRIGGER_RUN_ID:-}}"
+          if [[ -z "$RUN_ID" ]]; then
+            RUN_ID=$(gh run list --workflow android-apk.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          CONCLUSION=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID" --jq '.conclusion')
+          EVENT=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID" --jq '.event')
+          BRANCH=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID" --jq '.head_branch')
+          SHA=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID" --jq '.head_sha')
+          test "$CONCLUSION" = success
+          test "$EVENT" = push
+          test "$BRANCH" = main
+          test "$SHA" = "$(git rev-parse HEAD)"
+          ARTIFACT_ID=$(gh api --paginate "repos/$GH_REPO/actions/runs/$RUN_ID/artifacts" \
+            --jq '.artifacts[] | select(.name == "LinkGrab-2-android-arm64-apk" and .expired == false) | .id' | head -1)
+          test -n "$ARTIFACT_ID"
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
+          echo "VERIFIED_SHA=$SHA" >> "$GITHUB_ENV"
+      - name: Download exact verified APK
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 39118090898
-          artifact-ids: 12132867783
+          run-id: ${{ env.RUN_ID }}
+          artifact-ids: ${{ env.ARTIFACT_ID }}
           merge-multiple: true
-          path: package
-      - name: Verify and publish the installable preview
+          path: dist
+      - name: Publish preview APK and checksum
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
-          mv package/app-debug.apk package/LinkGrab-2.0.0.apk
-          cd package
-          echo 'c727be7f532d2e044a36805bf1281c82e30a338d73bac6d524f736cb66d81b33  LinkGrab-2.0.0.apk' > SHA256SUMS.txt
-          sha256sum --check SHA256SUMS.txt
-          cat > RELEASE_NOTES.md <<'NOTES'
-          ## LinkGrab 2.0 preview
+          VERSION=$(sed -nE 's/^[[:space:]]*versionName = "([^"]+)".*/\1/p' app/build.gradle.kts | head -1)
+          test -n "$VERSION"
+          TAG="v${VERSION}-preview"
+          APK="LinkGrab-${VERSION}-preview.apk"
+          test -s dist/app-debug.apk
+          unzip -t dist/app-debug.apk >/dev/null
+          mv dist/app-debug.apk "dist/$APK"
+          (cd dist && sha256sum "$APK" > SHA256SUMS.txt)
+          (cd dist && sha256sum --check SHA256SUMS.txt)
+          cat > dist/RELEASE_NOTES.md <<'NOTES'
+          ## LinkGrab — бесплатный видеозагрузчик для Android
 
-          Free Android video/audio downloader. Android 10+, ARM64.
+          **Видео и аудио по ссылке. Без рекламы, подписок и регистрации.**
 
-          ### Install
-          Download **LinkGrab-2.0.0.apk** below and allow your browser or file manager to install it.
-          This preview uses a debug signing key. If Android reports a signature conflict with an older installation, uninstall the old app first. Uninstalling resets app history; media already saved to the gallery remains.
+          - YouTube, X/Twitter, TikTok и VK Видео (когда ссылки доступны yt-dlp).
+          - Приоритет TikTok-потокам без водяного знака, если источник их предоставляет.
+          - Предпросмотр, выбор качества, фоновая очередь, прогресс и история.
+          - Сохранение через Android MediaStore, тёмная и светлая темы.
+          - Автоматическая проверка обновлений yt-dlp при первом использовании.
 
-          ### Included
-          - Violet Compose interface with light, dark and system themes.
-          - On-device yt-dlp and FFmpeg; metadata preview, video and M4A/MP3 audio.
-          - Persistent queue, foreground progress, pause/resume, cancel and retry.
-          - MediaStore saving, searchable Room history, rename/open/share/delete.
-          - Onboarding, settings, engine updates and offline license information.
-          - No account, ads, paywall or custom backend.
+          ### Как установить
+          1. Скачай APK в разделе **Assets** ниже.
+          2. Открой APK через «Мои файлы → Загрузки» и подтверди установку.
+          3. Вставь ссылку и скачай видео.
 
-          Debug/release compilation, unit tests and lint passed. Three native integration tests passed on Android 16, covering actual yt-dlp/FFmpeg downloads, partial-file resume and MediaStore publication. Additional physical-device and 16 KB page-size validation is needed before a stable public release.
+          **Android 10+, ARM64.**
 
-          Site support and resumability depend on yt-dlp and the source. DRM, private and login-restricted content are not supported.
+          ### Важно
+          Это **preview-сборка с временной debug-подписью**, не стабильный release с постоянным сертификатом. При переходе между сборками может понадобиться удалить старую установку — при удалении сбросятся история и настройки LinkGrab. Видео в общей медиатеке обычно сохраняются.
 
-          Download only content you own or have permission to save. Some services may restrict downloading. DRM-protected, private, or login-restricted content may not work.
+          Сайты могут ограничивать загрузку; DRM, закрытые аккаунты и требующая авторизации медиатека не поддерживаются. Скачивай только контент, который разрешено сохранять.
 
-          Source: GPL-3.0-only. See README and THIRD_PARTY_NOTICES for build instructions and dependency licensing.
+          Исходники: GNU GPL-3.0-only. См. README, PRIVACY и THIRD_PARTY_NOTICES.
           NOTES
-          if gh release view v2.0.0 >/dev/null 2>&1; then
-            echo 'Release v2.0.0 already exists; preserving published assets.'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; refusing to overwrite APK."
             exit 0
           fi
-          gh release create v2.0.0 LinkGrab-2.0.0.apk SHA256SUMS.txt \
-            --target 1ecf10ce2c2f96dafe2b6150a4aa4e6831110091 \
-            --title 'LinkGrab 2.0.0 — Preview' --prerelease --notes-file RELEASE_NOTES.md
+          gh release create "$TAG" "dist/$APK" dist/SHA256SUMS.txt \
+            --target "$VERIFIED_SHA" \
+            --title "LinkGrab $VERSION — Android Preview" \
+            --prerelease --notes-file dist/RELEASE_NOTES.md

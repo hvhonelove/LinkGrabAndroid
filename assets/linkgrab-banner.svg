@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="435" viewBox="0 0 1200 435" role="img" aria-label="LinkGrab — бесплатный загрузчик видео для Android">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#171124"/><stop offset=".62" stop-color="#432568"/><stop offset="1" stop-color="#8658E8"/></linearGradient>
+<linearGradient id="violet" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#BE96FF"/><stop offset="1" stop-color="#8658ED"/></linearGradient>
+</defs>
+<rect width="1200" height="435" rx="30" fill="url(#bg)"/>
+<circle cx="1050" cy="100" r="285" fill="#D3B4FF" opacity=".09"/>
+<circle cx="1060" cy="450" r="310" fill="#D3B4FF" opacity=".08"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<g transform="translate(82 71)">
+<rect width="66" height="66" rx="19" fill="url(#violet)"/>
+<path d="M33 15v28m-11-10 11 11 11-11M19 52h28" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="85" y="49" font-size="57" letter-spacing="-2" font-weight="bold" fill="#fff">LinkGrab</text>
+<text x="0" y="129" font-size="32" font-weight="bold" fill="#fff">Сохраняй то, что нравится.</text>
+<text x="0" y="174" font-size="24" fill="#E2D4F6">Видео и музыка по ссылке.</text>
+<text x="0" y="208" font-size="22" fill="#E2D4F6">Без рекламы, подписок и аккаунтов.</text>
+<rect x="0" y="246" width="165" height="42" rx="21" fill="#C9A6FF"/>
+<text x="82" y="273" text-anchor="middle" font-size="16" fill="#24133A" font-weight="bold">Android 10+</text>
+<rect x="180" y="246" width="164" height="42" rx="21" fill="#FFFFFF" fill-opacity=".14"/>
+<text x="262" y="273" text-anchor="middle" font-size="16" fill="#fff" font-weight="bold">Open source</text>
+</g>
+<g transform="translate(855 22) rotate(7 124 190)">
+<rect width="248" height="394" rx="42" fill="#0B0A10" stroke="#C4ACDF" stroke-opacity=".5" stroke-width="3"/>
+<rect x="9" y="9" width="230" height="376" rx="34" fill="#1E172B"/>
+<rect x="83" y="16" width="84" height="19" rx="9" fill="#09070D"/>
+<text x="24" y="83" font-size="26" font-weight="bold" fill="#fff">LinkGrab</text>
+<rect x="21" y="107" width="206" height="110" rx="22" fill="url(#violet)"/>
+<text x="36" y="148" font-size="19" font-weight="bold" fill="#fff">Твоё видео</text>
+<text x="36" y="174" font-size="13" fill="#fff">Готово к скачиванию</text>
+<circle cx="198" cy="176" r="18" fill="#fff" fill-opacity=".25"/>
+<path d="M198 167v18m-7-8 7 8 7-8" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+<rect x="21" y="233" width="206" height="62" rx="17" fill="#382C4B"/>
+<text x="38" y="259" font-size="15" font-weight="bold" fill="#fff">1080p · MP4</text>
+<text x="38" y="280" font-size="12" fill="#D4C4E9">Лучшее качество</text>
+<rect x="21" y="308" width="206" height="51" rx="18" fill="#AC86FF"/>
+<text x="124" y="339" font-size="17" font-weight="bold" fill="#241238" text-anchor="middle">Скачать</text>
+<rect x="94" y="378" width="60" height="5" rx="3" fill="#E6DFF4"/>
+</g>
+</g>
+</svg>
